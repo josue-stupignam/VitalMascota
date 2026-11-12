@@ -1,17 +1,21 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import PageHeader from '../components/layout/PageHeader';
 import PetSelector from '../components/dashboard/PetSelector';
 import PetStatusCard from '../components/dashboard/PetStatusCard';
 import EventFeed from '../components/dashboard/EventFeed';
 import InventoryModule from '../components/dashboard/InventoryModule';
 import TaskList from '../components/dashboard/TaskList';
+import MissingPetPoster from '../components/dashboard/MissingPetPoster';
+import PetSitterModal from '../components/dashboard/PetSitterModal';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
 import { usePet } from '../context/PetContext';
 
 export default function DashboardHome() {
-  const { hasPets, petsLoading, setShowWizard } = usePet();
+  const { hasPets, petsLoading, setShowWizard, activePet, eventos } = usePet();
+  const [isPosterOpen, setIsPosterOpen] = useState(false);
+  const [isSitterOpen, setIsSitterOpen] = useState(false);
 
-  if (petsLoading) return <LoadingSpinner message="Cargando panel..." />;
+  if (petsLoading) return <LoadingSpinner message="Cargando panel de mascotas..." />;
 
   // ── Estado vacío: 0 mascotas ────────────────────────────────────
   if (!hasPets) {
@@ -52,10 +56,28 @@ export default function DashboardHome() {
       />
 
       <PetSelector />
-      <PetStatusCard />
-      <EventFeed />
+      <PetStatusCard
+        onOpenPoster={() => setIsPosterOpen(true)}
+        onOpenSitter={() => setIsSitterOpen(true)}
+      />
+      <EventFeed eventos={eventos} />
       <InventoryModule />
       <TaskList />
+
+      {activePet && (
+        <>
+          <MissingPetPoster
+            pet={activePet}
+            isOpen={isPosterOpen}
+            onClose={() => setIsPosterOpen(false)}
+          />
+          <PetSitterModal
+            pet={activePet}
+            isOpen={isSitterOpen}
+            onClose={() => setIsSitterOpen(false)}
+          />
+        </>
+      )}
     </main>
   );
 }

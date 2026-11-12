@@ -7,6 +7,8 @@ import OnboardingWizard from './components/onboarding/OnboardingWizard';
 import DashboardHome from './pages/DashboardHome';
 import EmergencyMap from './pages/EmergencyMap';
 import MedicalDashboard from './pages/MedicalDashboard';
+import PublicEmergencyProfile from './pages/PublicEmergencyProfile';
+import SitterView from './pages/SitterView';
 import { useAuth } from './context/AuthContext';
 import { usePet } from './context/PetContext';
 import './styles/global.css';
@@ -29,6 +31,10 @@ export default function App() {
 
       <Routes>
         <Route path="/login" element={<AuthView />} />
+
+        {/* Rutas públicas de emergencia y cuidador (no requieren login) */}
+        <Route path="/emergencia/:petId" element={<PublicEmergencyProfile />} />
+        <Route path="/cuidador/:petId" element={<SitterView />} />
 
         {/* Rutas protegidas (requieren login, validado por ProtectedRoute) */}
         <Route
