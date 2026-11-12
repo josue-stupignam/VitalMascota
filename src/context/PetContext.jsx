@@ -26,14 +26,35 @@ const PetContext = createContext();
 export function PetProvider({ children }) {
   const { user } = useAuth();
   
-  const [pets, setPets] = useState([]);
-  const [activePetId, setActivePetId] = useState(null);
-  const [petsLoading, setPetsLoading] = useState(true);
+  // Caché en memoria / almacenamiento local para evitar pantallas en blanco durante la conexión inicial
+  const getInitialCache = () => {
+    if (!user) return [];
+    try {
+      const cached = localStorage.getItem(`vitalmascota_pets_cache_${user.uid}`);
+      return cached ? JSON.parse(cached) : [];
+    } catch (e) {
+      return [];
+    }
+  };
+
+  const [pets, setPets] = useState(getInitialCache);
+  const [activePetId, setActivePetId] = useState(() => {
+    const initial = getInitialCache();
+    return initial.length > 0 ? initial[0].id : null;
+  });
+  const [petsLoading, setPetsLoading] = useState(() => getInitialCache().length === 0);
   const [showWizard, setShowWizard] = useState(false);
 
-  // ── Firestore: Sincronización en tiempo real ────────────────────────
+  // ── Firestore: Sincronización en tiempo real con caché en memoria ─────────
   useEffect(() => {
     if (user) {
+      const cached = getInitialCache();
+      if (cached.length > 0) {
+        setPets(cached);
+        if (!activePetId) setActivePetId(cached[0].id);
+        setPetsLoading(false);
+      }
+
       const q = query(collection(db, 'pets'), where('userId', '==', user.uid));
       
       const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -42,12 +63,18 @@ export function PetProvider({ children }) {
           return {
             id: doc.id,
             ...data,
-            // Descifrar historial médico
+            // Descifrar historial médico confidencial
             medico: data.medico ? (typeof data.medico === 'string' ? decryptData(data.medico) : data.medico) : {}
           };
         });
         
         setPets(petsData);
+        // Guardar en caché local
+        try {
+          localStorage.setItem(`vitalmascota_pets_cache_${user.uid}`, JSON.stringify(petsData));
+        } catch (e) {
+          // Si el storage está lleno o restringido
+        }
         
         if (petsData.length > 0) {
           if (!petsData.find(p => p.id === activePetId)) {
