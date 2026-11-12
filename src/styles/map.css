@@ -1,0 +1,128 @@
+/* ─── Map Styles ─────────────────────────────────────────────────────────── */
+
+.map-wrapper {
+  border-radius: var(--radius, 16px);
+  overflow: hidden;
+  box-shadow: var(--shadow, 0 2px 12px rgba(0, 0, 0, 0.06));
+  margin-bottom: 16px;
+}
+
+.map-container {
+  width: 100%;
+  height: 300px;
+}
+
+/* Marcador del usuario */
+.user-marker-dot {
+  width: 16px;
+  height: 16px;
+  background: var(--color-primary, #4f8cff);
+  border: 3px solid #fff;
+  border-radius: 50%;
+  box-shadow: 0 0 0 4px rgba(79, 140, 255, 0.3), 0 2px 8px rgba(0, 0, 0, 0.2);
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 4px rgba(79, 140, 255, 0.3), 0 2px 8px rgba(0, 0, 0, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 0 10px rgba(79, 140, 255, 0.1), 0 2px 8px rgba(0, 0, 0, 0.2);
+  }
+  100% {
+    box-shadow: 0 0 0 4px rgba(79, 140, 255, 0.3), 0 2px 8px rgba(0, 0, 0, 0.2);
+  }
+}
+
+/* Marcador de clínica */
+.clinic-marker-pin {
+  font-size: 1.6rem;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+}
+
+/* Popup de clínica */
+.clinic-popup strong {
+  font-size: 0.9rem;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.clinic-popup p {
+  font-size: 0.78rem;
+  margin-bottom: 3px;
+  color: #555;
+}
+
+.clinic-status {
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+
+.clinic-status.open {
+  background: var(--color-success-bg, #e8f9ee);
+  color: var(--color-success, #34c759);
+}
+
+.clinic-status.closed {
+  background: var(--color-danger-bg, #ffe5e3);
+  color: var(--color-danger, #ff3b30);
+}
+
+.clinic-hours {
+  font-size: 0.72rem;
+  color: #888;
+}
+
+.clinic-distance {
+  font-weight: 600;
+  font-size: 0.78rem;
+  color: var(--color-primary, #4f8cff);
+}
+
+/* ─── Clinic Cards ───────────────────────────────────────────────────────── */
+
+.clinic-list {
+  margin-top: 8px;
+}
+
+.clinic-card {
+  background: var(--color-surface, #fff);
+  border-radius: var(--radius, 16px);
+  padding: 14px;
+  margin-bottom: 10px;
+  box-shadow: var(--shadow, 0 2px 12px rgba(0, 0, 0, 0.06));
+}
+
+.clinic-card-header {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  margin-bottom: 10px;
+}
+
+.clinic-icon {
+  font-size: 1.6rem;
+}
+
+.clinic-name {
+  font-size: 0.92rem;
+  font-weight: 700;
+  margin-bottom: 2px;
+}
+
+.clinic-address {
+  font-size: 0.78rem;
+  color: var(--color-text-secondary, #6b7280);
+}
+
+.clinic-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
