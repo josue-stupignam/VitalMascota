@@ -1,0 +1,176 @@
+/* ─── Medical Dashboard ──────────────────────────────────────────────────── */
+
+.medical-page {
+  position: relative;
+  min-height: calc(100vh - var(--navbar-height));
+  padding-bottom: 80px; /* Espacio para el FAB */
+}
+
+/* Tabs */
+.tabs-container {
+  display: flex;
+  background: var(--color-surface, #ffffff);
+  border-radius: var(--radius-sm, 10px);
+  padding: 4px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+.tab-button {
+  flex: 1;
+  padding: 12px 8px;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-text-secondary, #6b7280);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.tab-button.active {
+  background: var(--color-bg, #f5f7fa);
+  color: var(--color-primary, #4f8cff);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+}
+
+/* Listas y Tarjetas Médicas */
+.tab-content {
+  animation: fadeIn 0.3s ease;
+}
+
+.medical-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.medical-card {
+  background: var(--color-surface, #ffffff);
+  border: 1px solid var(--color-border, #e5e7eb);
+  border-radius: var(--radius-sm, 10px);
+  padding: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.medical-card.alert-card {
+  background: var(--color-danger-bg, #ffe5e3);
+  border-color: rgba(255, 59, 48, 0.2);
+  color: var(--color-danger, #ff3b30);
+  font-weight: 700;
+  justify-content: flex-start;
+}
+
+.medical-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.medical-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--color-text, #1a1a2e);
+}
+
+.medical-date {
+  font-size: 0.8rem;
+  color: var(--color-text-secondary, #6b7280);
+}
+
+.medical-desc {
+  font-size: 0.8rem;
+  color: var(--color-text-secondary, #6b7280);
+  font-style: italic;
+  margin-top: 4px;
+}
+
+.status-pill {
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 20px;
+}
+
+.status-pill.active {
+  background: var(--color-success-bg, #e8f9ee);
+  color: var(--color-success, #34c759);
+}
+
+.status-pill.expired {
+  background: var(--color-danger-bg, #ffe5e3);
+  color: var(--color-danger, #ff3b30);
+}
+
+/* Floating Action Button (FAB) */
+.fab-button {
+  position: fixed;
+  bottom: calc(var(--navbar-height) + 20px);
+  right: 50%;
+  transform: translateX(50%);
+  background: var(--color-primary, #4f8cff);
+  color: white;
+  border: none;
+  border-radius: 30px;
+  padding: 16px 24px;
+  font-size: 1rem;
+  font-weight: 700;
+  box-shadow: 0 4px 12px rgba(79, 140, 255, 0.4);
+  cursor: pointer;
+  z-index: 100;
+  transition: all 0.2s ease;
+  width: max-content;
+}
+
+.fab-button:hover {
+  background: var(--color-primary-dark, #3a6fd8);
+  transform: translate(50%, -2px);
+  box-shadow: 0 6px 16px rgba(79, 140, 255, 0.5);
+}
+
+.fab-button:active {
+  transform: translate(50%, 0);
+}
+
+/* Modal Form Styles */
+.medical-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 12px;
+}
+
+.checkbox-group label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-weight: 500;
+  color: var(--color-text, #1a1a2e);
+}
+
+.checkbox-group input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--color-primary, #4f8cff);
+}
+
+.btn-submit-medical {
+  margin-top: 10px;
+  padding: 14px;
+  background: var(--color-success, #34c759);
+  color: white;
+  border: none;
+  border-radius: var(--radius-sm, 10px);
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.btn-submit-medical:hover {
+  background: #2ab84e;
+}

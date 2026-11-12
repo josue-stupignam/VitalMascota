@@ -1,0 +1,391 @@
+/* ─── Onboarding Wizard ───────────────────────────────────────────── */
+
+.onboarding-page {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  padding: 24px 20px;
+  background: #ffffff;
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+/* Progress dots */
+.onboarding-progress {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.progress-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--color-border, #e5e7eb);
+  transition: all 0.3s;
+}
+
+.progress-dot.active {
+  background: var(--color-primary, #4f8cff);
+  width: 30px;
+  border-radius: 5px;
+}
+
+.progress-dot.done {
+  background: var(--color-success, #34c759);
+}
+
+.onboarding-step-label {
+  text-align: center;
+  font-size: 0.75rem;
+  color: var(--color-text-secondary, #6b7280);
+  margin-bottom: 24px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Step content */
+.onboarding-step {
+  flex: 1;
+  animation: fadeSlideIn 0.35s ease;
+}
+
+.step-header {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.step-emoji {
+  font-size: 2.5rem;
+  display: block;
+  margin-bottom: 8px;
+}
+
+.step-title {
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: var(--color-text, #1a1a2e);
+  line-height: 1.3;
+}
+
+.step-subtitle {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--color-text-secondary, #6b7280);
+  margin: 20px 0 12px;
+}
+
+.step-hint {
+  font-size: 0.82rem;
+  color: var(--color-text-secondary, #6b7280);
+  margin-top: 4px;
+}
+
+/* Selection grid (species, age, weight) */
+.selection-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.selection-grid.cols-2 {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.selection-grid.cols-3 {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.selection-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 16px 8px;
+  background: var(--color-bg, #f5f7fa);
+  border: 2px solid var(--color-border, #e5e7eb);
+  border-radius: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: inherit;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.selection-card:hover {
+  border-color: var(--color-primary, #4f8cff);
+  background: #f0f5ff;
+}
+
+.selection-card.selected {
+  border-color: var(--color-primary, #4f8cff);
+  background: #eef3ff;
+  box-shadow: 0 0 0 3px rgba(79, 140, 255, 0.15);
+  transform: scale(1.03);
+}
+
+.selection-card.card-horizontal {
+  flex-direction: column;
+  padding: 14px 12px;
+}
+
+.selection-emoji {
+  font-size: 1.8rem;
+}
+
+.selection-label {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--color-text, #1a1a2e);
+}
+
+.selection-desc {
+  font-size: 0.7rem;
+  color: var(--color-text-secondary, #6b7280);
+}
+
+/* Photo upload */
+.photo-upload-area {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  max-height: 280px;
+  border: 3px dashed var(--color-border, #e5e7eb);
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  overflow: hidden;
+  background: var(--color-bg, #f5f7fa);
+}
+
+.photo-upload-area:hover {
+  border-color: var(--color-primary, #4f8cff);
+  background: #f0f5ff;
+}
+
+.photo-upload-area.has-photo {
+  border-style: solid;
+  border-color: var(--color-success, #34c759);
+}
+
+.photo-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.photo-icon {
+  font-size: 2.5rem;
+}
+
+.photo-text {
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: var(--color-text, #1a1a2e);
+}
+
+.photo-subtext {
+  font-size: 0.72rem;
+  color: var(--color-text-secondary, #6b7280);
+}
+
+.photo-preview {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.photo-input-hidden {
+  display: none;
+}
+
+.btn-change-photo {
+  display: block;
+  width: 100%;
+  padding: 10px;
+  margin-top: 10px;
+  background: transparent;
+  border: 1px solid var(--color-border, #e5e7eb);
+  border-radius: 10px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--color-text-secondary, #6b7280);
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.2s;
+}
+
+.btn-change-photo:hover {
+  background: var(--color-bg, #f5f7fa);
+}
+
+/* Bottom navigation buttons */
+.onboarding-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: auto;
+  padding-top: 24px;
+  padding-bottom: env(safe-area-inset-bottom, 8px);
+}
+
+.btn-back {
+  flex: 0 0 auto;
+  padding: 16px 20px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  font-family: inherit;
+  border: 2px solid var(--color-border, #e5e7eb);
+  border-radius: 14px;
+  background: #fff;
+  color: var(--color-text-secondary, #6b7280);
+  cursor: pointer;
+  transition: all 0.2s;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.btn-back:hover {
+  background: var(--color-bg, #f5f7fa);
+}
+
+.btn-next,
+.btn-finish {
+  flex: 1;
+  padding: 18px;
+  font-size: 1.05rem;
+  font-weight: 800;
+  font-family: inherit;
+  border: none;
+  border-radius: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.btn-next {
+  background: var(--color-primary, #4f8cff);
+  color: #fff;
+}
+
+.btn-next:hover:not(:disabled) {
+  background: var(--color-primary-dark, #3a6fd8);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(79, 140, 255, 0.3);
+}
+
+.btn-next:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.btn-finish {
+  background: var(--color-success, #34c759);
+  color: #fff;
+}
+
+.btn-finish:hover {
+  background: #2ab84e;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(52, 199, 89, 0.3);
+}
+
+/* Animations */
+@keyframes fadeSlideIn {
+  from {
+    opacity: 0;
+    transform: translateX(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* ─── Species cards (step 1) ────────────────────────────────────────────── */
+
+.species-grid {
+  gap: 12px;
+}
+
+.species-card {
+  padding: 20px 8px;
+}
+
+.species-emoji-lg {
+  font-size: 2.8rem;
+  display: block;
+  margin-bottom: 4px;
+}
+
+/* Compact photo area (step 2) */
+.photo-upload-area.compact {
+  aspect-ratio: 3 / 2;
+  max-height: 180px;
+  margin-top: 16px;
+}
+
+/* ─── Suggestion task list (step 4) ─────────────────────────────────────── */
+
+.suggestions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.suggestion-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  background: var(--color-bg, #f5f7fa);
+  border: 2px solid var(--color-border, #e5e7eb);
+  border-radius: 12px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.2s;
+  -webkit-tap-highlight-color: transparent;
+  text-align: left;
+  width: 100%;
+}
+
+.suggestion-card:hover {
+  border-color: var(--color-primary, #4f8cff);
+}
+
+.suggestion-card.selected {
+  border-color: var(--color-success, #34c759);
+  background: var(--color-success-bg, #e8f9ee);
+}
+
+.suggestion-icon {
+  font-size: 1.4rem;
+  flex-shrink: 0;
+}
+
+.suggestion-label {
+  flex: 1;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--color-text, #1a1a2e);
+}
+
+.suggestion-check {
+  font-size: 1.1rem;
+  flex-shrink: 0;
+}
+
+.suggestions-count {
+  text-align: center;
+  font-size: 0.78rem;
+  color: var(--color-success, #34c759);
+  font-weight: 700;
+  margin-top: 10px;
+}
+
