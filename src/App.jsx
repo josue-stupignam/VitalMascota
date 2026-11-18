@@ -9,6 +9,7 @@ import EmergencyMap from './pages/EmergencyMap';
 import MedicalDashboard from './pages/MedicalDashboard';
 import PublicEmergencyProfile from './pages/PublicEmergencyProfile';
 import SitterView from './pages/SitterView';
+import Profile from './pages/Profile';
 import { useAuth } from './context/AuthContext';
 import { usePet } from './context/PetContext';
 import './styles/global.css';
@@ -58,6 +59,14 @@ export default function App() {
           element={
             <ProtectedRoute>
               <MedicalDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/perfil"
+          element={
+            <ProtectedRoute>
+              <Profile />
             </ProtectedRoute>
           }
         />
