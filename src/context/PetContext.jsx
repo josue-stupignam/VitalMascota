@@ -5,6 +5,7 @@ import { collection, query, where, onSnapshot, doc, addDoc, updateDoc, deleteDoc
 import { clinicasCercanas, especieEmojis, familia } from '../data/mockData';
 import CryptoJS from 'crypto-js';
 import { CRYPTO_SECRET } from '../lib/cryptoSecret';
+import { TALLAS } from '../lib/pets';
 
 const encryptData = (data) => {
   return CryptoJS.AES.encrypt(JSON.stringify(data), CRYPTO_SECRET).toString();
@@ -167,6 +168,15 @@ export function PetProvider({ children }) {
     }
   }, [activePetId, pets]);
 
+  const updatePet = useCallback(async (patch) => {
+    if (!activePetId) return;
+    try {
+      await updateDoc(doc(db, 'pets', activePetId), patch);
+    } catch (error) {
+      console.error('Error actualizando la mascota:', error);
+    }
+  }, [activePetId]);
+
   const addInventoryItem = useCallback(async (item) => {
     if (!activePetId) return;
     const activePetData = pets.find(p => p.id === activePetId);
@@ -211,6 +221,7 @@ export function PetProvider({ children }) {
         raza: activePet.raza || '',
         edad: activePet.edad || '',
         peso: activePet.peso || 0,
+        talla: activePet.talla || 'mediana',
         sexo: activePet.sexo || '',
         microchip: activePet.microchip || '',
         avatar_url: activePet.avatar_url || activePet.foto || '',
@@ -247,6 +258,8 @@ export function PetProvider({ children }) {
     medico,
     clinicas: clinicasCercanas,
     familia,
+    TALLAS,
+    updatePet,
   };
 
   return <PetContext.Provider value={value}>{children}</PetContext.Provider>;
