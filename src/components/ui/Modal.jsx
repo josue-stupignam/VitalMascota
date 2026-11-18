@@ -38,6 +38,11 @@ export default function Modal({ isOpen, onClose, title, children }) {
           </button>
         </div>
         <div className="modal-body">{children}</div>
+        <div className="modal-footer">
+          <button type="button" className="btn-ghost" onClick={onClose}>
+            Cerrar
+          </button>
+        </div>
       </div>
     </div>
   );
