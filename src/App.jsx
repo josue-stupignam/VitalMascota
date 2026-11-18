@@ -10,6 +10,7 @@ import MedicalDashboard from './pages/MedicalDashboard';
 import PublicEmergencyProfile from './pages/PublicEmergencyProfile';
 import SitterView from './pages/SitterView';
 import Profile from './pages/Profile';
+import NotFound from './pages/NotFound';
 import { useAuth } from './context/AuthContext';
 import { usePet } from './context/PetContext';
 import useTheme from './hooks/useTheme';
@@ -73,11 +74,12 @@ export default function App() {
           }
         />
 
-        {/* Redirección raíz que respeta ProtectedRoute */}
+        {/* Raíz y 404 */}
         <Route
-          path="*"
-          element={<Navigate to={user ? "/dashboard" : "/login"} replace />}
+          path="/"
+          element={<Navigate to={user ? '/dashboard' : '/login'} replace />}
         />
+        <Route path="*" element={<NotFound />} />
       </Routes>
 
       {showNavbar && <Navbar theme={theme} onToggleTheme={toggleTheme} />}
