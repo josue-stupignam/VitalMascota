@@ -29,6 +29,7 @@ export default function InventoryModule() {
   const [unidadOtro, setUnidadOtro] = useState('latas');
   const [porcionManual, setPorcionManual] = useState('');
   const [consumoOtro, setConsumoOtro] = useState('');
+  const [errorMsg, setErrorMsg] = useState('');
 
   const tallaKey = activePet?.talla || 'mediana';
   const talla = getTalla(tallaKey);
@@ -50,6 +51,7 @@ export default function InventoryModule() {
       setUnidadOtro('latas');
       setPorcionManual('');
       setConsumoOtro('');
+      setErrorMsg('');
     }
   }, [isModalOpen]);
 
@@ -57,9 +59,20 @@ export default function InventoryModule() {
     e.preventDefault();
     if (!nombre.trim()) return;
 
+    const kilos = parseFloat(cantidadKg);
+    const consumoDiario = parseFloat(consumoOtro);
+    if (tipo === 'alimento' && (!Number.isFinite(kilos) || kilos <= 0)) {
+      setErrorMsg('Indica cuántos kilogramos de alimento tienes (mayor que 0).');
+      return;
+    }
+    if (tipo === 'insumo' && (!Number.isFinite(consumoDiario) || consumoDiario <= 0)) {
+      setErrorMsg('Indica la cantidad total y el consumo diario (mayores que 0).');
+      return;
+    }
+    setErrorMsg('');
+
     let newItem;
     if (tipo === 'alimento') {
-      if (!cantidadKg) return;
       newItem = {
         nombre: nombre.trim(),
         tipo: 'alimento',
@@ -69,9 +82,8 @@ export default function InventoryModule() {
         diasRestantes: calcularDiasRestantes(gramosTotales, porcionEfectiva),
       };
     } else {
-      if (!cantidadOtro) return;
       const total = parseFloat(cantidadOtro) || 0;
-      const consumo = parseFloat(consumoOtro) || 0;
+      const consumo = consumoDiario;
       newItem = {
         nombre: nombre.trim(),
         tipo: 'insumo',
@@ -83,6 +95,7 @@ export default function InventoryModule() {
     }
 
     newItem.fechaActualizacion = new Date().toLocaleDateString('es-MX');
+    newItem.actualizadoEn = new Date().toISOString();
     await addInventoryItem(newItem);
     vibrateSuccess();
     setIsModalOpen(false);
@@ -110,7 +123,13 @@ export default function InventoryModule() {
       ) : (
         <ul className="inventory-list">
           {inventoryList.map((item) => {
-            const estado = estadoInventario(item.diasRestantes);
+            const diasVividos = item.actualizadoEn
+              ? Math.floor((Date.now() - new Date(item.actualizadoEn).getTime()) / 86400000)
+              : 0;
+            const diasRestantes = Number.isFinite(item.diasRestantes)
+              ? Math.max(0, item.diasRestantes - Math.max(0, diasVividos))
+              : item.diasRestantes;
+            const estado = estadoInventario(diasRestantes);
             return (
               <li key={item.id} className="inventory-item">
                 <div className="inventory-info">
@@ -125,9 +144,9 @@ export default function InventoryModule() {
 
                 <div className="inventory-status">
                   <span className={`days-left days-${estado}`}>
-                    {item.diasRestantes === null
+                    {diasRestantes === null
                       ? 'Sin cálculo'
-                      : `${item.diasRestantes} días`}
+                      : `${diasRestantes} días`}
                   </span>
                   <span className={`inventory-light light-${estado}`}>
                     {ETIQUETA_ESTADO[estado]}
@@ -310,6 +329,7 @@ export default function InventoryModule() {
             </>
           )}
 
+          {errorMsg && <p className="form-error">{errorMsg}</p>}
           <button type="submit" className="btn btn-primary">
             Calcular y guardar
           </button>

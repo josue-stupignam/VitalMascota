@@ -10,20 +10,40 @@ const leerTema = () => {
   }
 };
 
+let temaActual = null;
+const suscriptores = new Set();
+
+const notificar = () => {
+  suscriptores.forEach((fn) => fn(temaActual));
+};
+
+const aplicarTema = (tema) => {
+  temaActual = tema;
+  document.documentElement.dataset.theme = tema;
+  try {
+    localStorage.setItem(CLAVE, tema);
+  } catch (error) {
+    console.error('No se pudo guardar el tema:', error);
+  }
+  notificar();
+};
+
+const obtenerTema = () => {
+  if (temaActual === null) temaActual = leerTema();
+  return temaActual;
+};
+
 export default function useTheme() {
-  const [theme, setTheme] = useState(leerTema);
+  const [theme, setTheme] = useState(obtenerTema);
 
   useEffect(() => {
-    document.documentElement.dataset.theme = theme;
-    try {
-      localStorage.setItem(CLAVE, theme);
-    } catch (error) {
-      console.error('No se pudo guardar el tema:', error);
-    }
-  }, [theme]);
+    suscriptores.add(setTheme);
+    document.documentElement.dataset.theme = obtenerTema();
+    return () => suscriptores.delete(setTheme);
+  }, []);
 
   const toggleTheme = useCallback(() => {
-    setTheme((actual) => (actual === 'dark' ? 'light' : 'dark'));
+    aplicarTema(obtenerTema() === 'dark' ? 'light' : 'dark');
   }, []);
 
   return { theme, toggleTheme };

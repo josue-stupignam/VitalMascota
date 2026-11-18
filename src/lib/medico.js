@@ -71,6 +71,9 @@ export function resumenSalud(medico = {}) {
   if (estados.length === 0) {
     return { estado: 'sin-datos', mensaje: 'Aún no hay vacunas registradas' };
   }
+  if (estados.includes('sin-datos')) {
+    return { estado: 'sin-datos', mensaje: 'Faltan fechas de vacunación' };
+  }
   return { estado: 'ok', mensaje: 'Esquema de vacunación al día' };
 }
 

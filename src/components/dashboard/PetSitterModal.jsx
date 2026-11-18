@@ -24,7 +24,15 @@ export default function PetSitterModal({ pet, isOpen, onClose, onUpdatePet }) {
   const crearEnlace = async () => {
     setGenerando(true);
     try {
-      const nuevo = crearAcceso('cuidador', HORAS_CUIDADOR);
+      const medico = pet.medico || {};
+      const nuevo = {
+        ...crearAcceso('cuidador', HORAS_CUIDADOR),
+        contacto: {
+          veterinario: medico.veterinario || '',
+          clinica: medico.clinica || '',
+          telefono: medico.telefono || '',
+        },
+      };
       const otros = accesosVigentes(pet.accesos).filter((a) => a.tipo !== 'cuidador');
       await onUpdatePet({ accesos: [...otros, nuevo] });
       vibrateSuccess();

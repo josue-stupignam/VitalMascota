@@ -76,7 +76,7 @@ export function UserProvider({ children }) {
   const logoutAndClear = useCallback(async () => {
     try {
       Object.keys(localStorage)
-        .filter((clave) => clave.startsWith('vitalmascota_'))
+        .filter((clave) => clave.startsWith('vitalmascota_') && clave !== 'vitalmascota_theme')
         .forEach((clave) => localStorage.removeItem(clave));
     } catch (error) {
       console.error('No se pudo limpiar la caché local:', error);

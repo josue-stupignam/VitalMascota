@@ -39,6 +39,7 @@ export default function OnboardingWizard({ onClose }) {
   const [sexo, setSexo] = useState('macho');
   const [foto, setFoto] = useState('');
   const [selectedTareas, setSelectedTareas] = useState([]);
+  const [errorMsg, setErrorMsg] = useState('');
 
   const EspecieIcono = getEspecieIcono(especie);
 
@@ -52,11 +53,24 @@ export default function OnboardingWizard({ onClose }) {
 
   const handlePhotoUpload = (e) => {
     const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => setFoto(reader.result);
-      reader.readAsDataURL(file);
-    }
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const imagen = new Image();
+      imagen.onload = () => {
+        const maximo = 640;
+        const escala = Math.min(1, maximo / Math.max(imagen.width, imagen.height));
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.round(imagen.width * escala);
+        canvas.height = Math.round(imagen.height * escala);
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(imagen, 0, 0, canvas.width, canvas.height);
+        setFoto(canvas.toDataURL('image/jpeg', 0.75));
+      };
+      imagen.onerror = () => setFoto(reader.result);
+      imagen.src = reader.result;
+    };
+    reader.readAsDataURL(file);
   };
 
   const toggleTareaSelection = (t) => {
@@ -77,6 +91,7 @@ export default function OnboardingWizard({ onClose }) {
   const handleFinish = async () => {
     if (!nombre.trim() || !talla) return;
     setIsSubmitting(true);
+    setErrorMsg('');
     try {
       await addPet({
         nombre: nombre.trim(),
@@ -93,6 +108,7 @@ export default function OnboardingWizard({ onClose }) {
       if (onClose) onClose();
     } catch (err) {
       console.error('Error al registrar mascota:', err);
+      setErrorMsg(err?.message || 'No se pudo registrar la mascota. Inténtalo de nuevo.');
     } finally {
       setIsSubmitting(false);
     }
@@ -366,6 +382,8 @@ export default function OnboardingWizard({ onClose }) {
           </button>
         )}
 
+        {errorMsg && <p className="form-error">{errorMsg}</p>}
+
         {step < 4 ? (
           <button
             type="button"
@@ -379,7 +397,7 @@ export default function OnboardingWizard({ onClose }) {
           <button
             type="button"
             className="btn-finish"
-            disabled={isSubmitting || !talla}
+            disabled={isSubmitting}
             onClick={handleFinish}
           >
             {isSubmitting ? 'Guardando…' : 'Finalizar registro'}

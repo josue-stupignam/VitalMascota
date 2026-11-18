@@ -25,9 +25,12 @@ const decryptData = (ciphertext) => {
   if (!ciphertext) return {};
   try {
     const bytes = CryptoJS.AES.decrypt(ciphertext, CRYPTO_SECRET);
-    return JSON.parse(bytes.toString(CryptoJS.enc.Utf8));
+    const texto = bytes.toString(CryptoJS.enc.Utf8);
+    if (!texto) return null;
+    return JSON.parse(texto);
   } catch (e) {
-    return {};
+    console.error('No se pudo descifrar el expediente público:', e);
+    return null;
   }
 };
 
@@ -38,6 +41,7 @@ export default function PublicEmergencyProfile() {
   const [pet, setPet] = useState(null);
   const [loading, setLoading] = useState(true);
   const [autorizado, setAutorizado] = useState(false);
+  const [errorCifrado, setErrorCifrado] = useState(false);
 
   useEffect(() => {
     const fetchPet = async () => {
@@ -50,7 +54,8 @@ export default function PublicEmergencyProfile() {
               ? decryptData(raw.medico)
               : raw.medico
             : {};
-          setPet({ id: petDoc.id, ...raw, medico: medicoData });
+          setErrorCifrado(Boolean(raw.medico) && medicoData === null);
+          setPet({ id: petDoc.id, ...raw, medico: medicoData || {} });
           setAutorizado(accesoValido(raw.accesos, token, 'emergencia'));
         }
       } catch (err) {
@@ -90,6 +95,13 @@ export default function PublicEmergencyProfile() {
       <div className="emergency-banner">
         <ShieldAlert size={18} /> Ficha médica de emergencia • Acceso de solo lectura
       </div>
+
+      {errorCifrado && (
+        <p className="form-error">
+          El expediente médico está cifrado y no se pudo leer en este dispositivo. Muestra esta
+          pantalla al veterinario y contacta al dueño para confirmar alergias y tratamientos.
+        </p>
+      )}
 
       <div className="card pet-status-card">
         <div className="pet-status-header">

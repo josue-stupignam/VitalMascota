@@ -15,9 +15,13 @@ const decryptData = (ciphertext) => {
   if (!ciphertext) return {};
   try {
     const bytes = CryptoJS.AES.decrypt(ciphertext, CRYPTO_SECRET);
-    return JSON.parse(bytes.toString(CryptoJS.enc.Utf8));
+    const texto = bytes.toString(CryptoJS.enc.Utf8);
+    if (!texto) return null;
+    const datos = JSON.parse(texto);
+    return datos && typeof datos === 'object' ? datos : null;
   } catch (e) {
-    return {};
+    console.error('No se pudo descifrar el expediente médico:', e);
+    return null;
   }
 };
 
@@ -60,11 +64,15 @@ export function PetProvider({ children }) {
       const unsubscribe = onSnapshot(q, (snapshot) => {
         const petsData = snapshot.docs.map(doc => {
           const data = doc.data();
+          const medicoDescifrado = data.medico
+            ? (typeof data.medico === 'string' ? decryptData(data.medico) : data.medico)
+            : {};
           return {
             id: doc.id,
             ...data,
             // Descifrar historial médico confidencial
-            medico: data.medico ? (typeof data.medico === 'string' ? decryptData(data.medico) : data.medico) : {}
+            medico: medicoDescifrado || {},
+            medicoError: Boolean(data.medico) && medicoDescifrado === null
           };
         });
         
@@ -124,6 +132,9 @@ export function PetProvider({ children }) {
       return docRef.id;
     } catch (error) {
       console.error("Error al agregar mascota:", error);
+      throw new Error(
+        'No se pudo guardar la mascota. Revisa tu conexión e inténtalo de nuevo (si la foto es muy grande, quítala).'
+      );
     }
   }, [user]);
 
@@ -155,6 +166,9 @@ export function PetProvider({ children }) {
     if (!activePetId) return;
     const activePetData = pets.find(p => p.id === activePetId);
     if (!activePetData) return;
+    if (activePetData.medicoError) {
+      throw new Error('No se pudo descifrar el expediente. Recarga la página antes de guardar para no perder datos.');
+    }
 
     const nuevoMedico = typeof updater === 'function' 
       ? updater(activePetData.medico || {}) 

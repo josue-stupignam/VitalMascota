@@ -1,9 +1,10 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   AlertTriangle,
   Activity,
   ClipboardList,
   FileDown,
+  Phone,
   Plus,
   Scale,
   Scissors,
@@ -33,6 +34,7 @@ const TABS = [
   { key: 'cirugias', label: 'Cirugías', icon: Scissors },
   { key: 'bitacora', label: 'Bitácora', icon: ClipboardList },
   { key: 'peso', label: 'Peso', icon: Scale },
+  { key: 'contactos', label: 'Contactos', icon: Phone },
 ];
 
 const TITULOS_MODAL = {
@@ -41,6 +43,7 @@ const TITULOS_MODAL = {
   cirugias: 'Añadir cirugía',
   bitacora: 'Nueva entrada de bitácora',
   peso: 'Registrar peso',
+  contactos: 'Editar contactos',
 };
 
 const ETIQUETAS_RESCATE = [
@@ -64,11 +67,42 @@ export default function MedicalDashboard() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isQrModalOpen, setIsQrModalOpen] = useState(false);
   const [formData, setFormData] = useState(formVacio());
+  const [errorMsg, setErrorMsg] = useState('');
+  const [contacto, setContacto] = useState({
+    veterinario: '',
+    clinica: '',
+    telefono: '',
+    proximaCita: '',
+    microchip: '',
+  });
+
 
   const medico = activePet?.medico || {};
 
   const salud = useMemo(() => resumenSalud(medico), [medico]);
   const talla = getTalla(activePet?.talla);
+  useEffect(() => {
+    setContacto({
+      veterinario: medico.veterinario || '',
+      clinica: medico.clinica || '',
+      telefono: medico.telefono || '',
+      proximaCita: medico.proximaCita || '',
+      microchip: medico.microchip || '',
+    });
+  }, [
+    activePet?.id,
+    medico.veterinario,
+    medico.clinica,
+    medico.telefono,
+    medico.proximaCita,
+    medico.microchip,
+  ]);
+
+  const historialPeso = useMemo(() => medico.historialPeso || [], [medico]);
+  const ultimoPeso = useMemo(() => {
+    if (historialPeso.length === 0) return activePet?.peso;
+    return historialPeso[historialPeso.length - 1].peso;
+  }, [historialPeso, activePet]);
 
   if (!activePet) return null;
 
@@ -85,12 +119,33 @@ export default function MedicalDashboard() {
       [campo]: e?.target ? e.target.value : e,
     }));
 
-  const handleSave = (e) => {
+  const handleSave = async (e) => {
     e.preventDefault();
     const detalle = formData.descripcion.trim();
+    const requiereDetalle =
+      activeTab === 'vacunas' || activeTab === 'alergias' || activeTab === 'cirugias';
 
+    if (requiereDetalle && detalle.length < 10) {
+      setErrorMsg('El detalle es obligatorio: escribe al menos 10 caracteres (sin contar espacios).');
+      return;
+    }
+
+    setErrorMsg('');
+
+    try {
+      await guardarSegunPestana(detalle);
+    } catch (error) {
+      setErrorMsg(error?.message || 'No se pudo guardar. Inténtalo de nuevo.');
+      return;
+    }
+
+    vibrateSuccess();
+    setIsModalOpen(false);
+  };
+
+  const guardarSegunPestana = (detalle) => {
     if (activeTab === 'vacunas') {
-      updateActivePetMedico((prev) => ({
+      return updateActivePetMedico((prev) => ({
         ...prev,
         vacunas: [
           ...(prev.vacunas || []),
@@ -102,16 +157,20 @@ export default function MedicalDashboard() {
           },
         ],
       }));
-    } else if (activeTab === 'alergias') {
-      updateActivePetMedico((prev) => ({
+    }
+
+    if (activeTab === 'alergias') {
+      return updateActivePetMedico((prev) => ({
         ...prev,
         alergias: [
           ...(prev.alergias || []),
           { nombre: formData.nombre.trim(), descripcion: detalle },
         ],
       }));
-    } else if (activeTab === 'cirugias') {
-      updateActivePetMedico((prev) => ({
+    }
+
+    if (activeTab === 'cirugias') {
+      return updateActivePetMedico((prev) => ({
         ...prev,
         cirugias: [
           ...(prev.cirugias || []),
@@ -122,16 +181,20 @@ export default function MedicalDashboard() {
           },
         ],
       }));
-    } else if (activeTab === 'bitacora') {
-      updateActivePetMedico((prev) => ({
+    }
+
+    if (activeTab === 'bitacora') {
+      return updateActivePetMedico((prev) => ({
         ...prev,
         bitacora: [
           ...(prev.bitacora || []),
           { id: Date.now().toString(), fecha: formData.fecha, nota: formData.nota.trim() },
         ],
       }));
-    } else if (activeTab === 'peso') {
-      updateActivePetMedico((prev) => ({
+    }
+
+    if (activeTab === 'peso') {
+      return updateActivePetMedico((prev) => ({
         ...prev,
         historialPeso: [
           ...(prev.historialPeso || []),
@@ -140,8 +203,7 @@ export default function MedicalDashboard() {
       }));
     }
 
-    vibrateSuccess();
-    setIsModalOpen(false);
+    return Promise.resolve();
   };
 
   const detalleForm = (
@@ -347,17 +409,113 @@ export default function MedicalDashboard() {
               historial={medico.historialPeso || []}
               tallaKey={activePet.talla}
             />
-            {pesoFueraDeRango(activePet.peso, activePet.talla) === 'bajo' && (
+            {pesoFueraDeRango(ultimoPeso, activePet.talla) === 'bajo' && (
               <p className="weight-warning">
                 El peso registrado está por debajo del rango saludable de la talla {talla.label}.
               </p>
             )}
-            {pesoFueraDeRango(activePet.peso, activePet.talla) === 'alto' && (
+            {pesoFueraDeRango(ultimoPeso, activePet.talla) === 'alto' && (
               <p className="weight-warning">
                 El peso registrado está por encima del rango saludable de la talla {talla.label}.
               </p>
             )}
           </div>
+        )}
+
+        {activeTab === 'contactos' && (
+          <form
+            className="medical-form contact-form no-print"
+            onSubmit={async (e) => {
+              e.preventDefault();
+              setErrorMsg('');
+              try {
+                await updateActivePetMedico({
+                  veterinario: contacto.veterinario.trim(),
+                  clinica: contacto.clinica.trim(),
+                  telefono: contacto.telefono.trim(),
+                  proximaCita: contacto.proximaCita,
+                  microchip: contacto.microchip.trim(),
+                });
+              } catch (error) {
+                setErrorMsg(error?.message || 'No se pudo guardar. Inténtalo de nuevo.');
+                return;
+              }
+              vibrateSuccess();
+            }}
+          >
+            <p className="field-hint">
+              Estos datos aparecen en el QR de emergencia y en el enlace del cuidador.
+            </p>
+            {errorMsg && <p className="form-error">{errorMsg}</p>}
+            <div className="input-group">
+              <label className="input-label" htmlFor="contacto-vet">
+                Veterinario de cabecera
+              </label>
+              <input
+                id="contacto-vet"
+                type="text"
+                className="input-field"
+                value={contacto.veterinario}
+                onChange={(e) => setContacto((p) => ({ ...p, veterinario: e.target.value }))}
+                placeholder="Ej. Dra. Laura Méndez"
+              />
+            </div>
+            <div className="input-group">
+              <label className="input-label" htmlFor="contacto-clinica">
+                Clínica
+              </label>
+              <input
+                id="contacto-clinica"
+                type="text"
+                className="input-field"
+                value={contacto.clinica}
+                onChange={(e) => setContacto((p) => ({ ...p, clinica: e.target.value }))}
+                placeholder="Ej. Hospital Veterinario del Valle"
+              />
+            </div>
+            <div className="input-group">
+              <label className="input-label" htmlFor="contacto-telefono">
+                Teléfono de emergencia
+              </label>
+              <input
+                id="contacto-telefono"
+                type="tel"
+                inputMode="tel"
+                className="input-field"
+                value={contacto.telefono}
+                onChange={(e) => setContacto((p) => ({ ...p, telefono: e.target.value }))}
+                placeholder="Ej. +52 55 1234 5678"
+              />
+            </div>
+            <div className="input-group">
+              <label className="input-label" htmlFor="contacto-cita">
+                Próxima cita
+              </label>
+              <input
+                id="contacto-cita"
+                type="date"
+                className="input-field"
+                value={contacto.proximaCita}
+                onChange={(e) => setContacto((p) => ({ ...p, proximaCita: e.target.value }))}
+              />
+            </div>
+            <div className="input-group">
+              <label className="input-label" htmlFor="contacto-microchip">
+                Microchip
+              </label>
+              <input
+                id="contacto-microchip"
+                type="text"
+                className="input-field"
+                value={contacto.microchip}
+                onChange={(e) => setContacto((p) => ({ ...p, microchip: e.target.value }))}
+                placeholder="Número de microchip"
+              />
+            </div>
+            <button type="submit" className="btn-submit-medical">
+              Guardar contactos
+            </button>
+          </form>
         )}
 
         {medico.veterinario && (
@@ -369,9 +527,11 @@ export default function MedicalDashboard() {
         )}
       </div>
 
-      <button type="button" className="fab-button no-print" onClick={abrirModal}>
-        <Plus size={18} /> Añadir {TABS.find((t) => t.key === activeTab)?.label}
-      </button>
+      {activeTab !== 'contactos' && (
+        <button type="button" className="fab-button no-print" onClick={abrirModal}>
+          <Plus size={18} /> Añadir {TABS.find((t) => t.key === activeTab)?.label}
+        </button>
+      )}
 
       <Modal isOpen={isModalOpen} onClose={cerrarModal} title={TITULOS_MODAL[activeTab]}>
         <form onSubmit={handleSave} className="medical-form">
@@ -480,6 +640,8 @@ export default function MedicalDashboard() {
           )}
 
           {activeTab !== 'bitacora' && activeTab !== 'peso' && detalleForm}
+
+          {errorMsg && <p className="form-error">{errorMsg}</p>}
 
           <button type="submit" className="btn-submit-medical">
             Guardar

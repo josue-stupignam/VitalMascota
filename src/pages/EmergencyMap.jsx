@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { MapPinOff, RefreshCw, Siren } from 'lucide-react';
 import PageHeader from '../components/layout/PageHeader';
 import MapWidget from '../components/map/MapWidget';
@@ -29,10 +29,12 @@ export default function EmergencyMap() {
   const [isSearching, setIsSearching] = useState(false);
   const [errorMsg, setErrorMsg] = useState(null);
   const [usandoRespaldo, setUsandoRespaldo] = useState(false);
+  const [avisoUbicacion, setAvisoUbicacion] = useState('');
+  const peticionRef = useRef(null);
 
   useEffect(() => {
     if (!navigator.geolocation) {
-      setErrorMsg('Geolocalización no soportada. Mostrando clínicas de respaldo.');
+      setAvisoUbicacion('Geolocalización no soportada: las distancias son aproximadas.');
       setGpsListo(true);
       return;
     }
@@ -43,7 +45,7 @@ export default function EmergencyMap() {
         setGpsListo(true);
       },
       () => {
-        setErrorMsg('No se pudo obtener tu ubicación. Mostrando CDMX por defecto.');
+        setAvisoUbicacion('No se pudo obtener tu ubicación: mostrando clínicas de referencia en CDMX.');
         setGpsListo(true);
       },
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
@@ -53,6 +55,12 @@ export default function EmergencyMap() {
   const fetchVets = useCallback(async (lat, lng) => {
     setIsSearching(true);
     setErrorMsg(null);
+
+    if (peticionRef.current) peticionRef.current.abort();
+    const controller = new AbortController();
+    peticionRef.current = controller;
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
+
     try {
       const query = `[out:json][timeout:25];(node["amenity"="veterinary"](around:${RADIO_METROS},${lat},${lng});way["amenity"="veterinary"](around:${RADIO_METROS},${lat},${lng});relation["amenity"="veterinary"](around:${RADIO_METROS},${lat},${lng}););out center tags;`;
 
@@ -60,6 +68,7 @@ export default function EmergencyMap() {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: `data=${encodeURIComponent(query)}`,
+        signal: controller.signal,
       });
 
       if (!response.ok) throw new Error(`Overpass respondió ${response.status}`);
@@ -101,11 +110,18 @@ export default function EmergencyMap() {
         setErrorMsg('No se encontraron veterinarias en 5 km. Mostrando clínicas de referencia.');
       }
     } catch (error) {
+      if (error.name === 'AbortError' && peticionRef.current !== controller) return;
       console.error('Error buscando veterinarias:', error);
       setClinicas(clinicasCercanas);
       setUsandoRespaldo(true);
-      setErrorMsg('El servicio de mapas no respondió. Mostrando clínicas de referencia.');
+      setErrorMsg(
+        error.name === 'AbortError'
+          ? 'La búsqueda tardó demasiado. Mostrando clínicas de referencia.'
+          : 'El servicio de mapas no respondió. Mostrando clínicas de referencia.'
+      );
     } finally {
+      clearTimeout(timeoutId);
+      if (peticionRef.current === controller) peticionRef.current = null;
       setIsSearching(false);
     }
   }, []);
@@ -113,6 +129,10 @@ export default function EmergencyMap() {
   useEffect(() => {
     if (gpsListo) fetchVets(location.lat, location.lng);
   }, [gpsListo, location.lat, location.lng, fetchVets]);
+
+  useEffect(() => () => {
+    if (peticionRef.current) peticionRef.current.abort();
+  }, []);
 
   const userPosition = useMemo(() => [location.lat, location.lng], [location]);
 
@@ -123,6 +143,12 @@ export default function EmergencyMap() {
         subtitle="Veterinarias en un radio de 5 km"
         icon={<Siren size={22} />}
       />
+
+      {avisoUbicacion && !usandoRespaldo && (
+        <div className="location-warning">
+          <MapPinOff size={16} /> {avisoUbicacion}
+        </div>
+      )}
 
       {errorMsg && (
         <div className="location-warning">

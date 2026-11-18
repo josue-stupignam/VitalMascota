@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { doc, getDoc } from 'firebase/firestore';
-import CryptoJS from 'crypto-js';
 import {
   ArrowLeft,
   Clock,
@@ -11,23 +10,12 @@ import {
   Utensils,
 } from 'lucide-react';
 import { db } from '../firebaseConfig';
-import { CRYPTO_SECRET } from '../lib/cryptoSecret';
 import { accesoValido, horasRestantes } from '../lib/accesos';
 import { getEspecieIcono } from '../lib/especies';
 import { getPorcionDiaria, getTalla } from '../lib/pets';
 import { iconoTarea } from '../lib/tareaIconos';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
 import '../styles/global.css';
-
-const decryptData = (ciphertext) => {
-  if (!ciphertext) return {};
-  try {
-    const bytes = CryptoJS.AES.decrypt(ciphertext, CRYPTO_SECRET);
-    return JSON.parse(bytes.toString(CryptoJS.enc.Utf8));
-  } catch (e) {
-    return {};
-  }
-};
 
 export default function SitterView() {
   const { petId } = useParams();
@@ -43,12 +31,8 @@ export default function SitterView() {
         const petDoc = await getDoc(doc(db, 'pets', petId));
         if (petDoc.exists()) {
           const raw = petDoc.data();
-          const medicoData = raw.medico
-            ? typeof raw.medico === 'string'
-              ? decryptData(raw.medico)
-              : raw.medico
-            : {};
-          setPet({ id: petDoc.id, ...raw, medico: medicoData });
+          // El cuidador solo ve rutinas y teléfonos: no desciframos el expediente clínico.
+          setPet({ ...raw, id: petDoc.id });
           if (accesoValido(raw.accesos, token, 'cuidador')) {
             setAcceso((raw.accesos || []).find((a) => a.token === token));
           }
@@ -81,10 +65,14 @@ export default function SitterView() {
     );
   }
 
-  const { medico = {}, tareas = [] } = pet;
+  const { tareas = [] } = pet;
+  const contacto = acceso.contacto || {};
   const Icono = getEspecieIcono(pet.especie);
   const talla = getTalla(pet.talla);
-  const porcion = getPorcionDiaria(pet.talla);
+  const alimento = (pet.inventario || []).find(
+    (item) => item.tipo === 'alimento' && item.porcionDiaria
+  );
+  const porcion = alimento?.porcionDiaria || getPorcionDiaria(pet.talla);
   const tareasComida = tareas.filter((t) =>
     /comer|aliment|comida|agua|porcion|porción/i.test(t.tarea || '')
   );
@@ -124,7 +112,11 @@ export default function SitterView() {
         </h3>
         <div className="feeding-summary">
           <span className="feeding-portion">{porcion} g</span>
-          <span className="feeding-label">ración diaria recomendada para talla {talla.label}</span>
+          <span className="feeding-label">
+            {alimento
+              ? `ración diaria indicada por el dueño (${alimento.nombre})`
+              : `ración diaria recomendada para talla ${talla.label}`}
+          </span>
         </div>
         {tareasComida.length > 0 ? (
           <ul className="task-list">
@@ -172,17 +164,21 @@ export default function SitterView() {
         <h3 className="card-title">
           <Stethoscope size={18} /> Teléfonos de emergencia
         </h3>
-        {medico.veterinario && <p><strong>Veterinario:</strong> {medico.veterinario}</p>}
-        {medico.clinica && <p><strong>Clínica:</strong> {medico.clinica}</p>}
-        {medico.telefono ? (
+        {contacto.veterinario && (
+          <p><strong>Veterinario:</strong> {contacto.veterinario}</p>
+        )}
+        {contacto.clinica && <p><strong>Clínica:</strong> {contacto.clinica}</p>}
+        {contacto.telefono ? (
           <p>
             <strong>Teléfono:</strong>{' '}
-            <a href={`tel:${medico.telefono}`} className="link-phone">
-              <Phone size={14} /> {medico.telefono}
+            <a href={`tel:${contacto.telefono}`} className="link-phone">
+              <Phone size={14} /> {contacto.telefono}
             </a>
           </p>
         ) : (
-          <p className="empty-state">Sin teléfono de emergencia registrado.</p>
+          <p className="empty-state">
+            El dueño aún no registró un teléfono de emergencia para este enlace.
+          </p>
         )}
       </div>
     </main>

@@ -667,6 +667,17 @@ body {
   cursor: pointer;
 }
 
+.form-error {
+  background: var(--color-danger-bg);
+  color: var(--color-danger);
+  border: 1px solid var(--color-danger);
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+
 .btn-ghost:hover {
   border-color: var(--color-primary);
   color: var(--color-primary);
