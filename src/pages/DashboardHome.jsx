@@ -13,7 +13,7 @@ import { PawPrint } from 'lucide-react';
 import { usePet } from '../context/PetContext';
 
 export default function DashboardHome() {
-  const { hasPets, petsLoading, setShowWizard, activePet, eventos } = usePet();
+  const { hasPets, petsLoading, setShowWizard, activePet, eventos, updatePet } = usePet();
   const [isPosterOpen, setIsPosterOpen] = useState(false);
   const [isSitterOpen, setIsSitterOpen] = useState(false);
 
@@ -99,6 +99,7 @@ export default function DashboardHome() {
             pet={activePet}
             isOpen={isSitterOpen}
             onClose={() => setIsSitterOpen(false)}
+            onUpdatePet={updatePet}
           />
         </>
       )}

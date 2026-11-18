@@ -1,20 +1,30 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { doc, getDoc } from 'firebase/firestore';
+import CryptoJS from 'crypto-js';
+import {
+  ArrowLeft,
+  Clock,
+  Phone,
+  ShieldAlert,
+  Stethoscope,
+  Syringe,
+  TriangleAlert,
+} from 'lucide-react';
 import { db } from '../firebaseConfig';
+import { CRYPTO_SECRET } from '../lib/cryptoSecret';
+import { accesoValido } from '../lib/accesos';
+import { getEspecieIcono } from '../lib/especies';
+import { getTalla } from '../lib/pets';
+import { normalizarAlergia } from '../lib/medico';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
 import WeightChart from '../components/medical/WeightChart';
-import AllergyList from '../components/medical/AllergyList';
-import VaccineList from '../components/medical/VaccineList';
-import CryptoJS from 'crypto-js';
 import '../styles/global.css';
-
-const SECRET_KEY = 'vitalmascota_secure_vault_2026';
 
 const decryptData = (ciphertext) => {
   if (!ciphertext) return {};
   try {
-    const bytes = CryptoJS.AES.decrypt(ciphertext, SECRET_KEY);
+    const bytes = CryptoJS.AES.decrypt(ciphertext, CRYPTO_SECRET);
     return JSON.parse(bytes.toString(CryptoJS.enc.Utf8));
   } catch (e) {
     return {};
@@ -23,8 +33,11 @@ const decryptData = (ciphertext) => {
 
 export default function PublicEmergencyProfile() {
   const { petId } = useParams();
+  const [searchParams] = useSearchParams();
+  const token = searchParams.get('token');
   const [pet, setPet] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [autorizado, setAutorizado] = useState(false);
 
   useEffect(() => {
     const fetchPet = async () => {
@@ -32,8 +45,13 @@ export default function PublicEmergencyProfile() {
         const petDoc = await getDoc(doc(db, 'pets', petId));
         if (petDoc.exists()) {
           const raw = petDoc.data();
-          const medicoData = raw.medico ? (typeof raw.medico === 'string' ? decryptData(raw.medico) : raw.medico) : {};
+          const medicoData = raw.medico
+            ? typeof raw.medico === 'string'
+              ? decryptData(raw.medico)
+              : raw.medico
+            : {};
           setPet({ id: petDoc.id, ...raw, medico: medicoData });
+          setAutorizado(accesoValido(raw.accesos, token, 'emergencia'));
         }
       } catch (err) {
         console.error('Error al obtener perfil público de emergencia:', err);
@@ -43,42 +61,34 @@ export default function PublicEmergencyProfile() {
     };
 
     fetchPet();
-  }, [petId]);
+  }, [petId, token]);
 
   if (loading) return <LoadingSpinner message="Cargando ficha médica de emergencia..." />;
 
-  if (!pet) {
+  if (!pet || !autorizado) {
     return (
-      <main className="page" style={{ textAlign: 'center', paddingTop: '40px' }}>
-        <span style={{ fontSize: '3rem' }}>🚨</span>
-        <h2>Ficha Médica no encontrada</h2>
-        <p style={{ color: 'var(--color-text-secondary)', marginTop: '8px' }}>
-          El expediente solicitado no existe o fue retirado.
+      <main className="page not-found">
+        <Clock size={48} className="not-found-icon" />
+        <h1>Enlace no válido o expirado</h1>
+        <p>
+          Esta ficha de emergencia solo se abre con un enlace vigente generado por el dueño. Pide
+          un nuevo código QR o solicita el acceso directamente.
         </p>
-        <Link to="/login" style={{ display: 'inline-block', marginTop: '16px', color: 'var(--color-primary)' }}>
-          Ir a VitalMascota
+        <Link to="/login" className="btn btn-primary">
+          <ArrowLeft size={16} /> Ir a VitalMascota
         </Link>
       </main>
     );
   }
 
   const { medico = {} } = pet;
+  const Icono = getEspecieIcono(pet.especie);
+  const talla = getTalla(pet.talla);
 
   return (
     <main className="page">
-      <div
-        style={{
-          background: 'var(--color-danger-bg)',
-          color: 'var(--color-danger)',
-          padding: '12px 16px',
-          borderRadius: '12px',
-          fontWeight: 'bold',
-          marginBottom: '16px',
-          textAlign: 'center',
-          fontSize: '0.95rem',
-        }}
-      >
-        🚨 Ficha Médica de Emergencia • Acceso Rápido Rescatista / Veterinario
+      <div className="emergency-banner">
+        <ShieldAlert size={18} /> Ficha médica de emergencia • Acceso de solo lectura
       </div>
 
       <div className="card pet-status-card">
@@ -86,76 +96,114 @@ export default function PublicEmergencyProfile() {
           {pet.avatar_url || pet.foto ? (
             <img src={pet.avatar_url || pet.foto} alt={pet.nombre} className="pet-avatar" />
           ) : (
-            <div
-              className="pet-avatar"
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                background: 'rgba(255,255,255,0.2)',
-                fontSize: '2rem',
-              }}
-            >
-              🐾
+            <div className="pet-avatar pet-avatar-icon">
+              <Icono size={34} />
             </div>
           )}
-          <div>
-            <h1 className="pet-name" style={{ fontSize: '1.6rem' }}>{pet.nombre}</h1>
+          <div className="pet-status-info">
+            <h1 className="pet-name">{pet.nombre}</h1>
             <p className="pet-detail">
-              {pet.raza || pet.especie} • {pet.sexo || ''} • {pet.edad || ''}
+              {pet.raza || pet.especie} • {pet.sexo || 'Sin dato'} • {pet.edad || 'Edad N/A'}
             </p>
-            {pet.microchip && (
-              <span className="status-badge" style={{ background: '#fff', color: '#1a1a2e' }}>
-                Chip: {pet.microchip}
-              </span>
-            )}
+            <div className="pet-badges">
+              <span className="talla-badge">{talla.label}</span>
+              {pet.peso ? <span className="talla-badge">{pet.peso} kg</span> : null}
+              {pet.microchip ? (
+                <span className="talla-badge">Chip {pet.microchip}</span>
+              ) : null}
+            </div>
           </div>
         </div>
-      </div>
-
-      {/* Contactos de Urgencia */}
-      <div className="card vet-card">
-        <h3 className="card-title">📞 Contactos Directos de Cabecera</h3>
-        {medico.veterinario && <p><strong>🩺 Veterinario:</strong> {medico.veterinario}</p>}
-        {medico.clinica && <p><strong>🏥 Clínica habitual:</strong> {medico.clinica}</p>}
-        {medico.telefono && (
-          <p>
-            <strong>Teléfono clínica:</strong>{' '}
-            <a href={`tel:${medico.telefono}`} style={{ color: 'var(--color-primary)', fontWeight: 'bold' }}>
-              {medico.telefono}
-            </a>
-          </p>
+        {pet.etiquetas?.length > 0 && (
+          <p className="emergency-tags">{pet.etiquetas.join(' • ')}</p>
         )}
       </div>
 
-      {/* Alergias críticas */}
-      <AllergyList alergias={medico.alergias || []} />
+      <div className="card">
+        <h3 className="card-title">
+          <Stethoscope size={18} /> Contactos de cabecera
+        </h3>
+        {medico.veterinario && <p><strong>Veterinario:</strong> {medico.veterinario}</p>}
+        {medico.clinica && <p><strong>Clínica:</strong> {medico.clinica}</p>}
+        {medico.telefono && (
+          <p>
+            <strong>Teléfono:</strong>{' '}
+            <a href={`tel:${medico.telefono}`} className="link-phone">
+              <Phone size={14} /> {medico.telefono}
+            </a>
+          </p>
+        )}
+        {medico.proximaCita && (
+          <p><strong>Próxima cita:</strong> {medico.proximaCita}</p>
+        )}
+      </div>
 
-      {/* Vacunas */}
-      <VaccineList vacunas={medico.vacunas || []} />
+      {medico.alergias?.length > 0 && (
+        <div className="card alert-card">
+          <h3 className="card-title">
+            <TriangleAlert size={18} /> Alergias y restricciones
+          </h3>
+          <ul className="allergy-list">
+            {medico.alergias.map((raw, i) => {
+              const alergia = normalizarAlergia(raw);
+              return (
+                <li key={i} className="allergy-item">
+                  <span className="allergy-tag">
+                    <TriangleAlert size={13} /> {alergia.nombre}
+                  </span>
+                  {alergia.descripcion && (
+                    <span className="medical-desc">{alergia.descripcion}</span>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      )}
 
-      {/* Cirugías si existen */}
-      {medico.cirugias && medico.cirugias.length > 0 && (
+      {medico.vacunas?.length > 0 && (
         <div className="card">
-          <h3 className="card-title">✂️ Cirugías y Procedimientos Previos</h3>
-          <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            {medico.cirugias.map((c, i) => (
-              <li key={i} style={{ borderBottom: '1px solid var(--color-border)', paddingBottom: '6px' }}>
-                <strong>{c.nombre}</strong> <span style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)' }}>({c.fecha})</span>
-                {c.descripcion && <p style={{ fontSize: '0.8rem', color: '#555', marginTop: '2px' }}>{c.descripcion}</p>}
+          <h3 className="card-title">
+            <Syringe size={18} /> Vacunas
+          </h3>
+          <ul className="vaccine-list">
+            {medico.vacunas.map((v, i) => (
+              <li key={i} className="vaccine-item">
+                <div className="medical-info">
+                  <span className="vaccine-name">{v.nombre}</span>
+                  {v.fecha && <span className="vaccine-date">{v.fecha}</span>}
+                  {v.descripcion && <span className="medical-desc">{v.descripcion}</span>}
+                </div>
               </li>
             ))}
           </ul>
         </div>
       )}
 
-      {/* Peso */}
-      <WeightChart historial={medico.historialPeso || []} />
+      {medico.cirugias?.length > 0 && (
+        <div className="card">
+          <h3 className="card-title">Cirugías y procedimientos previos</h3>
+          <ul className="allergy-list">
+            {medico.cirugias.map((c, i) => (
+              <li key={i} className="allergy-item">
+                <strong>
+                  {c.nombre}
+                  {c.fecha ? ` (${c.fecha})` : ''}
+                </strong>
+                {c.descripcion && <span className="medical-desc">{c.descripcion}</span>}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
-      <div style={{ textAlign: 'center', marginTop: '24px', paddingBottom: '30px' }}>
-        <p style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)' }}>
-          Datos provistos de forma segura y cifrada por <strong>VitalMascota</strong>
-        </p>
+      <WeightChart historial={medico.historialPeso || []} tallaKey={pet.talla} />
+
+      <div className="public-footer">
+        <p>Datos cifrados y compartidos de forma segura por VitalMascota.</p>
+        <Link to="/login" className="btn btn-ghost">
+          <ArrowLeft size={16} /> Volver
+        </Link>
       </div>
     </main>
   );

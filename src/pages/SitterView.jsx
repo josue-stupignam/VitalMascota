@@ -1,17 +1,28 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, useSearchParams, Link } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { doc, getDoc } from 'firebase/firestore';
-import { db } from '../firebaseConfig';
-import LoadingSpinner from '../components/ui/LoadingSpinner';
 import CryptoJS from 'crypto-js';
+import {
+  ArrowLeft,
+  Clock,
+  Eye,
+  Phone,
+  Stethoscope,
+  Utensils,
+} from 'lucide-react';
+import { db } from '../firebaseConfig';
+import { CRYPTO_SECRET } from '../lib/cryptoSecret';
+import { accesoValido, horasRestantes } from '../lib/accesos';
+import { getEspecieIcono } from '../lib/especies';
+import { getPorcionDiaria, getTalla } from '../lib/pets';
+import { iconoTarea } from '../lib/tareaIconos';
+import LoadingSpinner from '../components/ui/LoadingSpinner';
 import '../styles/global.css';
-
-const SECRET_KEY = 'vitalmascota_secure_vault_2026';
 
 const decryptData = (ciphertext) => {
   if (!ciphertext) return {};
   try {
-    const bytes = CryptoJS.AES.decrypt(ciphertext, SECRET_KEY);
+    const bytes = CryptoJS.AES.decrypt(ciphertext, CRYPTO_SECRET);
     return JSON.parse(bytes.toString(CryptoJS.enc.Utf8));
   } catch (e) {
     return {};
@@ -21,27 +32,26 @@ const decryptData = (ciphertext) => {
 export default function SitterView() {
   const { petId } = useParams();
   const [searchParams] = useSearchParams();
+  const token = searchParams.get('token');
   const [pet, setPet] = useState(null);
+  const [acceso, setAcceso] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [isExpired, setIsExpired] = useState(false);
-
-  const exp = searchParams.get('exp');
 
   useEffect(() => {
-    // Validar expiración (48h)
-    if (exp && Number(exp) < Date.now()) {
-      setIsExpired(true);
-      setLoading(false);
-      return;
-    }
-
     const fetchPetData = async () => {
       try {
         const petDoc = await getDoc(doc(db, 'pets', petId));
         if (petDoc.exists()) {
           const raw = petDoc.data();
-          const medicoData = raw.medico ? (typeof raw.medico === 'string' ? decryptData(raw.medico) : raw.medico) : {};
+          const medicoData = raw.medico
+            ? typeof raw.medico === 'string'
+              ? decryptData(raw.medico)
+              : raw.medico
+            : {};
           setPet({ id: petDoc.id, ...raw, medico: medicoData });
+          if (accesoValido(raw.accesos, token, 'cuidador')) {
+            setAcceso((raw.accesos || []).find((a) => a.token === token));
+          }
         }
       } catch (err) {
         console.error('Error cargando información para el cuidador:', err);
@@ -51,151 +61,129 @@ export default function SitterView() {
     };
 
     fetchPetData();
-  }, [petId, exp]);
+  }, [petId, token]);
 
   if (loading) return <LoadingSpinner message="Cargando perfil para cuidador..." />;
 
-  if (isExpired) {
+  if (!pet || !acceso) {
     return (
-      <main className="page" style={{ textAlign: 'center', paddingTop: '40px' }}>
-        <span style={{ fontSize: '3rem' }}>⏳</span>
-        <h2>Enlace Expirado</h2>
-        <p style={{ color: 'var(--color-text-secondary)', marginTop: '8px' }}>
-          Este enlace temporal para cuidador ha caducado por motivos de seguridad (límite 48 horas). Solicita un nuevo enlace al dueño.
+      <main className="page not-found">
+        <Clock size={48} className="not-found-icon" />
+        <h1>Enlace expirado o revocado</h1>
+        <p>
+          Este acceso temporal de cuidador caducó o fue revocado por el dueño. Solicita un nuevo
+          enlace de 48 horas.
         </p>
+        <Link to="/login" className="btn btn-primary">
+          <ArrowLeft size={16} /> Volver
+        </Link>
       </main>
     );
   }
 
-  if (!pet) {
-    return (
-      <main className="page" style={{ textAlign: 'center', paddingTop: '40px' }}>
-        <span style={{ fontSize: '3rem' }}>🐾</span>
-        <h2>Mascota no encontrada</h2>
-        <p style={{ color: 'var(--color-text-secondary)', marginTop: '8px' }}>
-          El registro solicitado no existe o el enlace es incorrecto.
-        </p>
-      </main>
-    );
-  }
-
-  const { inventario = [], tareas = [], medico = {} } = pet;
+  const { medico = {}, tareas = [] } = pet;
+  const Icono = getEspecieIcono(pet.especie);
+  const talla = getTalla(pet.talla);
+  const porcion = getPorcionDiaria(pet.talla);
+  const tareasComida = tareas.filter((t) =>
+    /comer|aliment|comida|agua|porcion|porción/i.test(t.tarea || '')
+  );
+  const otrasTareas = tareas.filter((t) => !tareasComida.includes(t));
 
   return (
     <main className="page">
-      <div
-        style={{
-          background: 'var(--color-warning-bg)',
-          color: '#8a6d00',
-          padding: '10px 14px',
-          borderRadius: '12px',
-          fontSize: '0.82rem',
-          fontWeight: 600,
-          marginBottom: '16px',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px',
-        }}
-      >
-        <span>👁️</span> Modo Cuidador (Sólo Lectura • Acceso Temporal 48h)
+      <div className="sitter-banner">
+        <Eye size={16} /> Modo cuidador · solo lectura · {horasRestantes(acceso.expira)} h restantes
       </div>
 
-      <div className="card pet-status-card" style={{ marginBottom: '16px' }}>
+      <div className="card pet-status-card">
         <div className="pet-status-header">
           {pet.avatar_url || pet.foto ? (
             <img src={pet.avatar_url || pet.foto} alt={pet.nombre} className="pet-avatar" />
           ) : (
-            <div
-              className="pet-avatar"
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                background: 'rgba(255,255,255,0.2)',
-                fontSize: '2rem',
-              }}
-            >
-              🐾
+            <div className="pet-avatar pet-avatar-icon">
+              <Icono size={34} />
             </div>
           )}
-          <div>
+          <div className="pet-status-info">
             <h2 className="pet-name">{pet.nombre}</h2>
-            <p className="pet-detail">{pet.raza || pet.especie} • {pet.edad || ''}</p>
-            <span className="status-badge" style={{ background: 'rgba(255,255,255,0.25)' }}>
-              A cargo del cuidador
-            </span>
+            <p className="pet-detail">
+              {pet.raza || pet.especie} • {pet.edad || 'Edad N/A'}
+            </p>
+            <div className="pet-badges">
+              <span className="talla-badge">{talla.label}</span>
+              <span className="talla-badge">A cargo del cuidador</span>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Rutinas diarias */}
       <div className="card">
-        <h3 className="card-title">📋 Rutinas para el Cuidador</h3>
-        {tareas.length === 0 ? (
-          <p className="empty-state">No hay tareas o rutinas específicas asignadas.</p>
-        ) : (
+        <h3 className="card-title">
+          <Utensils size={18} /> Alimentación
+        </h3>
+        <div className="feeding-summary">
+          <span className="feeding-portion">{porcion} g</span>
+          <span className="feeding-label">ración diaria recomendada para talla {talla.label}</span>
+        </div>
+        {tareasComida.length > 0 ? (
           <ul className="task-list">
-            {tareas.map((t, idx) => (
-              <li key={idx} className="task-card" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <span style={{ fontSize: '1.2rem' }}>{t.icono || '🐾'}</span>
-                <div>
+            {tareasComida.map((t, idx) => {
+              const TareaIcono = iconoTarea(t.tarea);
+              return (
+                <li key={t.id || idx} className="task-card">
+                  <span className="task-icon">
+                    <TareaIcono size={17} />
+                  </span>
                   <span className="task-name">{t.tarea}</span>
-                  <span style={{ fontSize: '0.75rem', color: t.completada ? 'var(--color-success)' : 'var(--color-text-secondary)' }}>
-                    {t.completada ? '✓ Marcada como completada hoy' : 'Pendiente de realizar'}
+                  <span className={`task-state ${t.completada ? 'done' : ''}`}>
+                    {t.completada ? 'Completada' : 'Pendiente'}
                   </span>
-                </div>
-              </li>
-            ))}
+                </li>
+              );
+            })}
           </ul>
-        )}
-      </div>
-
-      {/* Insumos y Porciones */}
-      <div className="card">
-        <h3 className="card-title">🍖 Porciones e Insumos</h3>
-        {inventario.length === 0 ? (
-          <p className="empty-state">No hay especificaciones de insumos registradas.</p>
         ) : (
-          <ul className="inventory-list">
-            {inventario.map((item, idx) => (
-              <li key={idx} className="inventory-item">
-                <div>
-                  <strong className="inventory-name">{item.nombre}</strong>
-                  <span className="inventory-qty">
-                    Porción / consumo: {item.consumoDiario} {item.unidad}/día
-                  </span>
-                </div>
-                <span className="days-left days-ok">
-                  {item.diasRestantes} días disponibles
-                </span>
-              </li>
-            ))}
-          </ul>
+          <p className="empty-state">El dueño no definió rutinas de comida específicas.</p>
         )}
       </div>
 
-      {/* Contactos de emergencia para el cuidador */}
-      <div className="card vet-card">
-        <h3 className="card-title">🚨 Contactos de Emergencia</h3>
-        {medico.veterinario && <p><strong>🩺 Veterinario:</strong> {medico.veterinario}</p>}
-        {medico.clinica && <p><strong>🏥 Clínica:</strong> {medico.clinica}</p>}
-        {medico.telefono && (
+      {otrasTareas.length > 0 && (
+        <div className="card">
+          <h3 className="card-title">Rutinas asignadas</h3>
+          <ul className="task-list">
+            {otrasTareas.map((t, idx) => {
+              const TareaIcono = iconoTarea(t.tarea);
+              return (
+                <li key={t.id || idx} className="task-card">
+                  <span className="task-icon">
+                    <TareaIcono size={17} />
+                  </span>
+                  <span className="task-name">{t.tarea}</span>
+                  {t.asignadoA && <span className="task-assignee">{t.asignadoA}</span>}
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      )}
+
+      <div className="card">
+        <h3 className="card-title">
+          <Stethoscope size={18} /> Teléfonos de emergencia
+        </h3>
+        {medico.veterinario && <p><strong>Veterinario:</strong> {medico.veterinario}</p>}
+        {medico.clinica && <p><strong>Clínica:</strong> {medico.clinica}</p>}
+        {medico.telefono ? (
           <p>
-            <strong>📞 Teléfono:</strong>{' '}
-            <a href={`tel:${medico.telefono}`} style={{ color: 'var(--color-primary)', fontWeight: 'bold' }}>
-              {medico.telefono}
+            <strong>Teléfono:</strong>{' '}
+            <a href={`tel:${medico.telefono}`} className="link-phone">
+              <Phone size={14} /> {medico.telefono}
             </a>
           </p>
+        ) : (
+          <p className="empty-state">Sin teléfono de emergencia registrado.</p>
         )}
-        <div style={{ marginTop: '12px' }}>
-          <Link
-            to={`/emergencia/${pet.id}`}
-            className="btn btn-emergency-transfer"
-            style={{ textDecoration: 'none', padding: '12px' }}
-          >
-            Ver Ficha Médica de Urgencia
-          </Link>
-        </div>
       </div>
     </main>
   );
