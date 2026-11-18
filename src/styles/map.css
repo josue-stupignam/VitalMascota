@@ -37,8 +37,41 @@
 
 /* Marcador de clínica */
 .clinic-marker-pin {
-  font-size: 1.6rem;
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+  background: transparent;
+}
+
+.clinic-pin-glyph {
+  display: block;
+  width: 26px;
+  height: 26px;
+  border-radius: 50% 50% 50% 0;
+  transform: rotate(-45deg);
+  background: var(--color-danger);
+  border: 2px solid var(--color-surface);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+  position: relative;
+}
+
+.clinic-pin-glyph::before,
+.clinic-pin-glyph::after {
+  content: '';
+  position: absolute;
+  background: var(--color-on-primary);
+  border-radius: 1px;
+}
+
+.clinic-pin-glyph::before {
+  width: 12px;
+  height: 4px;
+  top: 10px;
+  left: 5px;
+}
+
+.clinic-pin-glyph::after {
+  width: 4px;
+  height: 12px;
+  top: 6px;
+  left: 9px;
 }
 
 /* Popup de clínica */
@@ -105,7 +138,39 @@
 }
 
 .clinic-icon {
-  font-size: 1.6rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--color-danger-bg);
+  color: var(--color-danger);
+}
+
+.clinic-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.clinic-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.clinic-list-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.clinic-list-header .section-title {
+  margin: 0;
 }
 
 .clinic-name {
