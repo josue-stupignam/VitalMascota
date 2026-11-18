@@ -174,3 +174,305 @@
 .btn-submit-medical:hover {
   background: var(--color-success);
 }
+
+/* Banner de salud */
+.health-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  margin-bottom: 12px;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  border: 1px solid var(--color-border);
+}
+
+.health-ok {
+  background: var(--color-success-bg);
+  color: var(--color-success);
+  border-color: var(--color-success);
+}
+
+.health-proximo {
+  background: var(--color-warning-bg);
+  color: var(--color-warning);
+  border-color: var(--color-warning);
+}
+
+.health-critico {
+  background: var(--color-danger-bg);
+  color: var(--color-danger);
+  border-color: var(--color-danger);
+}
+
+.health-sin-datos {
+  background: var(--color-surface-2);
+  color: var(--color-text-secondary);
+}
+
+/* Pills de estado */
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 0.7rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+}
+
+.status-pill.light-ok {
+  background: var(--color-success-bg);
+  color: var(--color-success);
+}
+
+.status-pill.light-proximo {
+  background: var(--color-warning-bg);
+  color: var(--color-warning);
+}
+
+.status-pill.light-vencido,
+.status-pill.light-critico {
+  background: var(--color-danger-bg);
+  color: var(--color-danger);
+}
+
+.status-pill.light-sin-datos {
+  background: var(--color-surface-2);
+  color: var(--color-text-secondary);
+}
+
+.medical-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.medical-desc {
+  font-size: 0.8rem;
+  line-height: 1.4;
+  color: var(--color-text-secondary);
+}
+
+.tab-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.tabs-container {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.fab-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Vacunas y alergias */
+.vaccine-item {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.allergy-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.allergy-item {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+/* Peso */
+.weight-current {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: var(--color-primary);
+}
+
+.weight-range-note {
+  margin: 0 0 8px;
+  font-size: 0.78rem;
+  color: var(--color-text-secondary);
+}
+
+.weight-band {
+  fill: var(--color-success-bg);
+  opacity: 0.55;
+}
+
+.weight-line {
+  stroke: var(--color-primary);
+}
+
+.weight-dot {
+  fill: var(--color-primary);
+  stroke: var(--color-surface);
+  stroke-width: 2;
+}
+
+.weight-value {
+  fill: var(--color-text);
+  font-weight: 600;
+}
+
+.weight-label {
+  fill: var(--color-text-secondary);
+}
+
+.weight-warning {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin: 10px 0 0;
+  padding: 8px 10px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  border-radius: 10px;
+  background: var(--color-warning-bg);
+  color: var(--color-warning);
+}
+
+.weight-warning svg {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.weight-ok {
+  margin: 10px 0 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-success);
+}
+
+/* QR de emergencia */
+.qr-expiry {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  background: var(--color-warning-bg);
+  color: var(--color-warning);
+}
+
+.qr-pet-photo-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+}
+
+.qr-url {
+  word-break: break-all;
+  font-size: 0.72rem;
+  color: var(--color-text-secondary);
+  background: var(--color-bg);
+  padding: 8px;
+  border-radius: 8px;
+  width: 100%;
+}
+
+.qr-actions {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  width: 100%;
+}
+
+.btn-ghost {
+  background: var(--color-surface-2);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  padding: 10px 14px;
+  font-weight: 700;
+}
+
+.qr-revoke {
+  width: 100%;
+  color: var(--color-danger);
+  border-color: var(--color-danger);
+  background: transparent;
+}
+
+/* Impresión / respaldo PDF */
+.print-only {
+  display: none;
+}
+
+@media print {
+  .no-print,
+  .navbar,
+  .fab-button,
+  .tabs-container {
+    display: none !important;
+  }
+
+  .print-only {
+    display: block;
+  }
+
+  .page,
+  body,
+  .medical-page {
+    background: #fff !important;
+    color: #111 !important;
+  }
+
+  .medical-card,
+  .card {
+    background: #fff !important;
+    border: 1px solid #bbb !important;
+    break-inside: avoid;
+  }
+}
+
+/* Etiquetas de rescate */
+.rescuer-tags {
+  margin: 14px 0 12px;
+}
+
+.rescuer-tag-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.rescuer-tag {
+  padding: 7px 12px;
+  font-family: inherit;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--color-text-secondary);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 20px;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s, border-color 0.2s;
+}
+
+.rescuer-tag.active {
+  background: var(--color-primary-soft);
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}

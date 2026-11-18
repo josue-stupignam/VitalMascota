@@ -1,63 +1,114 @@
 import React from 'react';
+import { AlertTriangle, Scale } from 'lucide-react';
+import { getTalla } from '../../lib/pets';
+import { pesoFueraDeRango, rangoSaludable } from '../../lib/medico';
 import '../../styles/global.css';
 
-export default function WeightChart({ historial = [] }) {
+function etiqueta(item) {
+  if (item.fecha) return String(item.fecha).slice(0, 10);
+  return item.mes || '';
+}
+
+export default function WeightChart({ historial = [], tallaKey = 'mediana' }) {
   if (!historial || historial.length === 0) {
     return (
       <div className="card">
-        <h3 className="card-title">⚖️ Historial de Peso</h3>
+        <h3 className="card-title">
+          <Scale size={18} /> Historial de peso
+        </h3>
         <p className="empty-state">No hay registros de peso disponibles.</p>
       </div>
     );
   }
 
-  const pesos = historial.map((h) => Number(h.peso) || 0);
-  const minPeso = Math.min(...pesos);
-  const maxPeso = Math.max(...pesos);
-  const range = maxPeso - minPeso === 0 ? 1 : maxPeso - minPeso;
+  const ordenado = [...historial].sort((a, b) =>
+    String(etiqueta(a)).localeCompare(String(etiqueta(b)))
+  );
+  const pesos = ordenado.map((h) => Number(h.peso) || 0);
+  const { min, max } = rangoSaludable(tallaKey);
+  const ultimo = pesos[pesos.length - 1];
+  const fuera = pesoFueraDeRango(ultimo, tallaKey);
 
-  const points = historial.map((h, i) => {
-    const x = historial.length === 1 ? 150 : 20 + (i * (260 / (historial.length - 1)));
-    const y = 80 - (((Number(h.peso) || 0) - minPeso) / range) * 55;
-    return { x, y, peso: h.peso, mes: h.mes };
-  });
+  const valores = [...pesos, min, max === null ? min * 2 : max];
+  const minPeso = Math.min(...valores) * 0.9;
+  const maxPeso = Math.max(...valores) * 1.1;
+  const rango = maxPeso - minPeso || 1;
 
-  const polylinePoints = points.map((p) => `${p.x},${p.y}`).join(' ');
+  const y = (peso) => 90 - ((peso - minPeso) / rango) * 70;
+  const x = (i) =>
+    ordenado.length === 1 ? 150 : 24 + i * (252 / (ordenado.length - 1));
+
+  const puntos = ordenado.map((h, i) => ({
+    x: x(i),
+    y: y(Number(h.peso) || 0),
+    peso: h.peso,
+    label: etiqueta(h),
+  }));
+
+  const bandaY = max === null ? 20 : y(max);
+  const bandaAlto = Math.max(14, bandaY);
+  const bandaBajo = Math.min(84, y(min));
 
   return (
     <div className="card">
       <div className="card-title-row">
-        <h3 className="card-title">⚖️ Historial de Peso</h3>
-        <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-primary)' }}>
-          {historial[historial.length - 1]?.peso} kg
-        </span>
+        <h3 className="card-title">
+          <Scale size={18} /> Historial de peso
+        </h3>
+        <span className="weight-current">{ultimo} kg</span>
       </div>
 
-      <svg viewBox="0 0 300 100" className="weight-chart" style={{ width: '100%', height: '110px' }}>
-        {/* Línea de tendencia */}
-        {points.length > 1 && (
+      <p className="weight-range-note">
+        Rango saludable para talla {getTalla(tallaKey).label}: {min}
+        {max === null ? '+' : `–${max}`} kg
+      </p>
+
+      <svg viewBox="0 0 300 100" className="weight-chart" role="img" aria-label="Curva de peso">
+        <rect
+          x="0"
+          y={bandaAlto}
+          width="300"
+          height={Math.max(0, bandaBajo - bandaAlto)}
+          className="weight-band"
+        />
+        {puntos.length > 1 && (
           <polyline
             fill="none"
-            stroke="var(--color-primary)"
+            className="weight-line"
             strokeWidth="3"
             strokeLinecap="round"
             strokeLinejoin="round"
-            points={polylinePoints}
+            points={puntos.map((p) => `${p.x},${p.y}`).join(' ')}
           />
         )}
-        {/* Puntos y etiquetas */}
-        {points.map((p, idx) => (
-          <g key={idx}>
-            <circle cx={p.x} cy={p.y} r="4" fill="var(--color-primary)" stroke="#fff" strokeWidth="2" />
-            <text x={p.x} y={p.y - 8} fontSize="9" textAnchor="middle" fill="var(--color-text)" fontWeight="600">
+        {puntos.map((p, idx) => (
+          <g key={`${p.label}-${idx}`}>
+            <circle cx={p.x} cy={p.y} r="4" className="weight-dot" />
+            <text x={p.x} y={p.y - 8} fontSize="9" textAnchor="middle" className="weight-value">
               {p.peso}kg
             </text>
-            <text x={p.x} y={96} fontSize="8" textAnchor="middle" fill="var(--color-text-secondary)">
-              {p.mes}
+            <text x={p.x} y="98" fontSize="7" textAnchor="middle" className="weight-label">
+              {p.label}
             </text>
           </g>
         ))}
       </svg>
+
+      {fuera === 'bajo' && (
+        <p className="weight-warning">
+          <AlertTriangle size={14} /> El último peso está por debajo del rango saludable. Consulta a
+          tu veterinario.
+        </p>
+      )}
+      {fuera === 'alto' && (
+        <p className="weight-warning">
+          <AlertTriangle size={14} /> El último peso supera el rango saludable. Ajusta la ración con
+          tu veterinario.
+        </p>
+      )}
+      {fuera === 'ok' && (
+        <p className="weight-ok">El último peso está dentro del rango saludable.</p>
+      )}
     </div>
   );
 }
