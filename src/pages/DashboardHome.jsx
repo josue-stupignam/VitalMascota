@@ -7,7 +7,7 @@ import InventoryModule from '../components/dashboard/InventoryModule';
 import TaskList from '../components/dashboard/TaskList';
 import MissingPetPoster from '../components/dashboard/MissingPetPoster';
 import PetSitterModal from '../components/dashboard/PetSitterModal';
-import LoadingSpinner from '../components/ui/LoadingSpinner';
+import { SkeletonCard } from '../components/ui/Skeleton';
 import { usePet } from '../context/PetContext';
 
 export default function DashboardHome() {
@@ -15,7 +15,18 @@ export default function DashboardHome() {
   const [isPosterOpen, setIsPosterOpen] = useState(false);
   const [isSitterOpen, setIsSitterOpen] = useState(false);
 
-  if (petsLoading) return <LoadingSpinner message="Cargando panel de mascotas..." />;
+  if (petsLoading) {
+    return (
+      <main className="page">
+        <PageHeader title="VitalMascota" subtitle="Panel de control familiar" icon={null} />
+        <div className="skeleton-dashboard">
+          <SkeletonCard />
+          <SkeletonCard />
+          <SkeletonCard />
+        </div>
+      </main>
+    );
+  }
 
   // ── Estado vacío: 0 mascotas ────────────────────────────────────
   if (!hasPets) {
