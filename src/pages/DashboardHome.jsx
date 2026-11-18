@@ -7,7 +7,9 @@ import InventoryModule from '../components/dashboard/InventoryModule';
 import TaskList from '../components/dashboard/TaskList';
 import MissingPetPoster from '../components/dashboard/MissingPetPoster';
 import PetSitterModal from '../components/dashboard/PetSitterModal';
+import DatoCurioso from '../components/dashboard/DatoCurioso';
 import { SkeletonCard } from '../components/ui/Skeleton';
+import { PawPrint } from 'lucide-react';
 import { usePet } from '../context/PetContext';
 
 export default function DashboardHome() {
@@ -32,7 +34,7 @@ export default function DashboardHome() {
   if (!hasPets) {
     return (
       <main className="page" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '70vh', textAlign: 'center', padding: '20px' }}>
-        <span style={{ fontSize: '4rem', marginBottom: '16px' }}>🐾</span>
+        <PawPrint size={56} className="empty-pets-icon" aria-hidden="true" />
         <h2 style={{ margin: '0 0 8px 0', fontSize: '1.5rem' }}>Aún no tienes mascotas registradas.</h2>
         <p style={{ color: '#888', marginBottom: '24px', maxWidth: '300px' }}>
           Registra a tu primera mascota para comenzar a gestionar su salud, alimentación y citas.
@@ -63,8 +65,9 @@ export default function DashboardHome() {
       <PageHeader
         title="VitalMascota"
         subtitle="Panel de control familiar"
-        icon="🐾"
       />
+
+      <DatoCurioso />
 
       <div className="dashboard-grid">
         <div className="dash-pet">

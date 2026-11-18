@@ -958,3 +958,69 @@ body {
     animation: none;
   }
 }
+
+/* ─── Dato curioso ───────────────────────────────────────────────────────── */
+
+.dato-curioso {
+  display: flex;
+  gap: 12px;
+  padding: 14px 16px;
+  margin-bottom: 16px;
+  border: 1px solid var(--color-border);
+  border-left: 4px solid var(--color-primary);
+  border-radius: var(--radius-md, 14px);
+  background: var(--color-surface);
+}
+
+.dato-curioso-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+}
+
+.dato-curioso-body {
+  min-width: 0;
+}
+
+.dato-curioso-titulo {
+  margin: 0 0 2px;
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-primary);
+}
+
+.dato-curioso-texto {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.45;
+  color: var(--color-text);
+}
+
+.dato-curioso-consejo {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin: 8px 0 0;
+  font-size: 0.82rem;
+  line-height: 1.4;
+  color: var(--color-text-secondary);
+}
+
+.dato-curioso-consejo svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: var(--color-success);
+}
+
+.empty-pets-icon {
+  margin-bottom: 16px;
+  color: var(--color-primary);
+}
