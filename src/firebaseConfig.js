@@ -30,19 +30,35 @@ const requeridas = [
 
 const faltantes = requeridas.filter((clave) => !env[clave]);
 
-if (faltantes.length > 0) {
-  throw new Error(
-    `Faltan variables de entorno de Firebase: ${faltantes.join(', ')}. Revisa .env.example y crea tu archivo .env`
-  );
+export const firebaseConfigError =
+  faltantes.length > 0
+    ? `Faltan variables de entorno de Firebase: ${faltantes.join(', ')}.`
+    : '';
+
+export const firebaseConfigFaltantes = faltantes;
+
+let app = null;
+let authInstance = null;
+let dbInstance = null;
+
+if (!firebaseConfigError) {
+  try {
+    app = initializeApp(firebaseConfig);
+    authInstance = getAuth(app);
+    // Caché persistente en IndexedDB: el expediente médico sigue disponible sin conexión
+    dbInstance = initializeFirestore(app, {
+      localCache: persistentLocalCache({
+        tabManager: persistentMultipleTabManager(),
+      }),
+    });
+  } catch (error) {
+    console.error('No se pudo inicializar Firebase:', error);
+  }
 }
 
-const app = initializeApp(firebaseConfig);
+if (firebaseConfigError) {
+  console.error(firebaseConfigError, 'Revisa .env.example y define las variables en tu hosting.');
+}
 
-export const auth = getAuth(app);
-
-// Caché persistente en IndexedDB: el expediente médico sigue disponible sin conexión
-export const db = initializeFirestore(app, {
-  localCache: persistentLocalCache({
-    tabManager: persistentMultipleTabManager(),
-  }),
-});
+export const auth = authInstance;
+export const db = dbInstance;

@@ -105,3 +105,25 @@ npm audit          # debe decir: found 0 vulnerabilities
 npm run build      # debe terminar en verde
 git log -p main | grep -c AIzaSy   # debe imprimir 0
 ```
+
+## 7. Despliegue en Vercel
+
+Síntomas de una configuración incompleta: pantalla vacía o la tarjeta "Configuración
+incompleta" con la lista de variables que faltan.
+
+1. Vercel → proyecto → **Settings → Environment Variables**. Crea estas variables en
+   *Production*, *Preview* y *Development* (copia los valores de tu `.env` local):
+   - `VITE_FIREBASE_API_KEY`
+   - `VITE_FIREBASE_AUTH_DOMAIN`
+   - `VITE_FIREBASE_PROJECT_ID`
+   - `VITE_FIREBASE_STORAGE_BUCKET`
+   - `VITE_FIREBASE_MESSAGING_SENDER_ID`
+   - `VITE_FIREBASE_APP_ID`
+   - `VITE_FIREBASE_MEASUREMENT_ID` (opcional)
+   - `VITE_CRYPTO_SECRET` (obligatoria para leer expedientes ya cifrados)
+2. Settings → **General → Node.js Version**: 22.x (Vite 7 exige Node 20.19+ / 22.12+;
+   el repo fija `"engines": { "node": ">=22.12.0" }` y `.nvmrc`).
+3. **Deployments → Redeploy** sin caché de build. Las variables `VITE_*` se incrustan al
+   compilar: si las añades después de un build, el despliegue anterior no las verá.
+4. Comprueba en el navegador la consola: si sigue vacío, revisa el log de build de Vercel;
+   un fallo de compilación no publica la versión anterior automáticamente.

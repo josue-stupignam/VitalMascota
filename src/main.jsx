@@ -2,21 +2,31 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import App from './App';
+import ConfigError from './components/ui/ConfigError';
+import { firebaseConfigError, firebaseConfigFaltantes } from './firebaseConfig';
 import { AuthProvider } from './context/AuthContext';
 import { PetProvider } from './context/PetContext';
 import { UserProvider } from './context/UserContext';
 import './styles/global.css';
 
-ReactDOM.createRoot(document.getElementById('root')).render(
-  <React.StrictMode>
-    <BrowserRouter>
-      <AuthProvider>
-        <UserProvider>
-          <PetProvider>
-            <App />
-          </PetProvider>
-        </UserProvider>
-      </AuthProvider>
-    </BrowserRouter>
-  </React.StrictMode>
-);
+const raiz = document.getElementById('root');
+
+if (firebaseConfigError) {
+  ReactDOM.createRoot(raiz).render(
+    <ConfigError mensaje={firebaseConfigError} faltantes={firebaseConfigFaltantes} />
+  );
+} else {
+  ReactDOM.createRoot(raiz).render(
+    <React.StrictMode>
+      <BrowserRouter>
+        <AuthProvider>
+          <UserProvider>
+            <PetProvider>
+              <App />
+            </PetProvider>
+          </UserProvider>
+        </AuthProvider>
+      </BrowserRouter>
+    </React.StrictMode>
+  );
+}
