@@ -6,7 +6,7 @@
   flex-direction: column;
   justify-content: center;
   padding: 24px 20px;
-  background: #ffffff;
+  background: var(--color-surface);
   max-width: 480px;
   margin: 0 auto;
 }
@@ -73,11 +73,11 @@
 .input-field:focus {
   border-color: var(--color-primary, #4f8cff);
   box-shadow: 0 0 0 3px rgba(79, 140, 255, 0.15);
-  background: #fff;
+  background: var(--color-surface);
 }
 
 .input-field::placeholder {
-  color: #b0b7c3;
+  color: var(--color-text-secondary);
 }
 
 .input-large {
@@ -115,7 +115,7 @@
   border: none;
   border-radius: 16px;
   background: var(--color-primary, #4f8cff);
-  color: #fff;
+  color: var(--color-on-primary);
   cursor: pointer;
   transition: all 0.2s;
   -webkit-tap-highlight-color: transparent;
@@ -147,7 +147,7 @@
   width: 18px;
   height: 18px;
   border: 3px solid rgba(255, 255, 255, 0.3);
-  border-top-color: #fff;
+  border-top-color: var(--color-on-primary);
   border-radius: 50%;
   animation: spin 0.7s linear infinite;
 }

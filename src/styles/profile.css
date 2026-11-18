@@ -82,3 +82,10 @@
   background: var(--color-danger);
   color: #ffffff;
 }
+
+.profile-theme {
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}

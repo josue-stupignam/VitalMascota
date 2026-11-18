@@ -12,11 +12,13 @@ import SitterView from './pages/SitterView';
 import Profile from './pages/Profile';
 import { useAuth } from './context/AuthContext';
 import { usePet } from './context/PetContext';
+import useTheme from './hooks/useTheme';
 import './styles/global.css';
 
 export default function App() {
   const { user } = useAuth();
   const { hasPets, showWizard, setShowWizard } = usePet();
+  const { theme, toggleTheme } = useTheme();
 
   // Mostrar el navbar solo si el usuario está autenticado y tiene mascotas registradas
   const showNavbar = user && hasPets;
@@ -78,7 +80,7 @@ export default function App() {
         />
       </Routes>
 
-      {showNavbar && <Navbar />}
+      {showNavbar && <Navbar theme={theme} onToggleTheme={toggleTheme} />}
     </div>
   );
 }

@@ -51,7 +51,7 @@
 .clinic-popup p {
   font-size: 0.78rem;
   margin-bottom: 3px;
-  color: #555;
+  color: var(--color-text-secondary);
 }
 
 .clinic-status {
@@ -74,7 +74,7 @@
 
 .clinic-hours {
   font-size: 0.72rem;
-  color: #888;
+  color: var(--color-text-secondary);
 }
 
 .clinic-distance {

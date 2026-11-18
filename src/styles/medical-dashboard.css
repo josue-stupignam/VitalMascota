@@ -172,5 +172,5 @@
 }
 
 .btn-submit-medical:hover {
-  background: #2ab84e;
+  background: var(--color-success);
 }

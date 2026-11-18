@@ -1,9 +1,9 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { Home, Stethoscope, Siren, UserRound } from 'lucide-react';
+import { Home, Stethoscope, Siren, UserRound, Moon, Sun } from 'lucide-react';
 import '../../styles/navbar.css';
 
-export default function Navbar() {
+export default function Navbar({ theme = 'dark', onToggleTheme }) {
   return (
     <nav className="navbar" aria-label="Navegación principal">
       <NavLink
@@ -45,6 +45,24 @@ export default function Navbar() {
         </span>
         <span>Perfil</span>
       </NavLink>
+
+      {onToggleTheme && (
+        <button
+          type="button"
+          className="nav-item nav-theme"
+          onClick={onToggleTheme}
+          aria-label={theme === 'dark' ? 'Cambiar a tema claro' : 'Cambiar a tema oscuro'}
+        >
+          <span className="nav-icon">
+            {theme === 'dark' ? (
+              <Sun size={22} strokeWidth={2.2} aria-hidden="true" />
+            ) : (
+              <Moon size={22} strokeWidth={2.2} aria-hidden="true" />
+            )}
+          </span>
+          <span>Tema</span>
+        </button>
+      )}
     </nav>
   );
 }
