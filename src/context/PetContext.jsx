@@ -4,17 +4,16 @@ import { db } from '../firebaseConfig';
 import { collection, query, where, onSnapshot, doc, addDoc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { clinicasCercanas, especieEmojis, familia } from '../data/mockData';
 import CryptoJS from 'crypto-js';
-
-const SECRET_KEY = 'vitalmascota_secure_vault_2026';
+import { CRYPTO_SECRET } from '../lib/cryptoSecret';
 
 const encryptData = (data) => {
-  return CryptoJS.AES.encrypt(JSON.stringify(data), SECRET_KEY).toString();
+  return CryptoJS.AES.encrypt(JSON.stringify(data), CRYPTO_SECRET).toString();
 };
 
 const decryptData = (ciphertext) => {
   if (!ciphertext) return {};
   try {
-    const bytes = CryptoJS.AES.decrypt(ciphertext, SECRET_KEY);
+    const bytes = CryptoJS.AES.decrypt(ciphertext, CRYPTO_SECRET);
     return JSON.parse(bytes.toString(CryptoJS.enc.Utf8));
   } catch (e) {
     return {};

@@ -28,3 +28,8 @@ Thumbs.db
 # Cachés
 .cache/
 .vite/
+
+# Superpowers scratch
+.superpowers/
+# Archivos locales con credenciales reales
+ak.env
