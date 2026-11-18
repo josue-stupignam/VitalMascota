@@ -1,38 +1,90 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { Lightbulb, Package, Plus, Trash2 } from 'lucide-react';
 import { usePet } from '../../context/PetContext';
 import Modal from '../ui/Modal';
+import {
+  calcularDiasRestantes,
+  estadoInventario,
+  getPorcionDiaria,
+  getTalla,
+} from '../../lib/pets';
+import { vibrateSuccess } from '../../lib/haptics';
 import '../../styles/global.css';
 
+const ETIQUETA_ESTADO = {
+  ok: 'Abasto suficiente',
+  proximo: 'Por agotarse',
+  critico: 'Se agota pronto',
+  'sin-datos': 'Sin cálculo',
+};
+
 export default function InventoryModule() {
-  const { items, addInventoryItem, removeInventoryItem, activePet } = usePet();
+  const { items, addInventoryItem, removeInventoryItem, activePet, pets } = usePet();
   const [isModalOpen, setIsModalOpen] = useState(false);
 
+  const [tipo, setTipo] = useState('alimento');
   const [nombre, setNombre] = useState('');
-  const [cantidadTotal, setCantidadTotal] = useState('');
-  const [consumoDiario, setConsumoDiario] = useState('');
-  const [unidad, setUnidad] = useState('g'); // g, dosis, latas
+  const [cantidadKg, setCantidadKg] = useState('');
+  const [cantidadOtro, setCantidadOtro] = useState('');
+  const [unidadOtro, setUnidadOtro] = useState('latas');
+  const [porcionManual, setPorcionManual] = useState('');
+  const [consumoOtro, setConsumoOtro] = useState('');
+
+  const tallaKey = activePet?.talla || 'mediana';
+  const talla = getTalla(tallaKey);
+  const porcionSugerida = getPorcionDiaria(tallaKey);
+  const porcionEfectiva = getPorcionDiaria(tallaKey, porcionManual);
+
+  const gramosTotales = Math.round((parseFloat(cantidadKg) || 0) * 1000);
+  const diasCalculados =
+    tipo === 'alimento'
+      ? calcularDiasRestantes(gramosTotales, porcionEfectiva)
+      : calcularDiasRestantes(parseFloat(cantidadOtro), parseFloat(consumoOtro));
+
+  useEffect(() => {
+    if (!isModalOpen) {
+      setTipo('alimento');
+      setNombre('');
+      setCantidadKg('');
+      setCantidadOtro('');
+      setUnidadOtro('latas');
+      setPorcionManual('');
+      setConsumoOtro('');
+    }
+  }, [isModalOpen]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!nombre.trim() || !cantidadTotal || !consumoDiario) return;
+    if (!nombre.trim()) return;
 
-    const total = parseFloat(cantidadTotal) || 0;
-    const consumo = parseFloat(consumoDiario) || 1;
-    const diasRestantes = Math.max(0, Math.floor(total / (consumo > 0 ? consumo : 1)));
+    let newItem;
+    if (tipo === 'alimento') {
+      if (!cantidadKg) return;
+      newItem = {
+        nombre: nombre.trim(),
+        tipo: 'alimento',
+        total: gramosTotales,
+        unidad: 'g',
+        porcionDiaria: porcionEfectiva,
+        diasRestantes: calcularDiasRestantes(gramosTotales, porcionEfectiva),
+      };
+    } else {
+      if (!cantidadOtro) return;
+      const total = parseFloat(cantidadOtro) || 0;
+      const consumo = parseFloat(consumoOtro) || 0;
+      newItem = {
+        nombre: nombre.trim(),
+        tipo: 'insumo',
+        total,
+        unidad: unidadOtro,
+        porcionDiaria: consumo,
+        diasRestantes: calcularDiasRestantes(total, consumo),
+      };
+    }
 
-    const newItem = {
-      nombre: nombre.trim(),
-      total,
-      consumoDiario: consumo,
-      diasRestantes,
-      unidad,
-      fechaActualizacion: new Date().toLocaleDateString('es-MX'),
-    };
-
+    newItem.fechaActualizacion = new Date().toLocaleDateString('es-MX');
     await addInventoryItem(newItem);
-    setNombre('');
-    setCantidadTotal('');
-    setConsumoDiario('');
+    vibrateSuccess();
     setIsModalOpen(false);
   };
 
@@ -41,43 +93,53 @@ export default function InventoryModule() {
   return (
     <div className="card">
       <div className="card-title-row">
-        <h3 className="card-title">📦 Insumos y Alimento</h3>
-        <span className="section-label">Cálculo Inteligente</span>
+        <h3 className="card-title">
+          <Package size={18} /> Insumos y Alimento
+        </h3>
+        <span className="section-label">Ración automática</span>
       </div>
 
       {inventoryList.length === 0 ? (
-        <p className="empty-state">No tienes insumos ni alimento registrados.</p>
+        <div className="empty-state">
+          <p>No tienes insumos ni alimento registrados.</p>
+          <p className="empty-hint">
+            Registra el saco de croquetas en kilogramos y calcularemos cuántos días durará según la
+            talla de {activePet?.nombre || 'tu mascota'}.
+          </p>
+        </div>
       ) : (
         <ul className="inventory-list">
           {inventoryList.map((item) => {
-            const isLow = item.diasRestantes <= 5;
+            const estado = estadoInventario(item.diasRestantes);
             return (
               <li key={item.id} className="inventory-item">
-                <div style={{ flex: 1 }}>
+                <div className="inventory-info">
                   <div className="inventory-name">{item.nombre}</div>
                   <span className="inventory-qty">
-                    Total: {item.total} {item.unidad} • Consumo: {item.consumoDiario} {item.unidad}/día
+                    Total: {item.total} {item.unidad}
+                    {item.porcionDiaria
+                      ? ` • Ración: ${item.porcionDiaria} ${item.unidad}/día`
+                      : ''}
                   </span>
                 </div>
 
                 <div className="inventory-status">
-                  <span className={`days-left ${isLow ? 'days-danger' : 'days-ok'}`}>
-                    {item.diasRestantes} días rest.
+                  <span className={`days-left days-${estado}`}>
+                    {item.diasRestantes === null
+                      ? 'Sin cálculo'
+                      : `${item.diasRestantes} días`}
+                  </span>
+                  <span className={`inventory-light light-${estado}`}>
+                    {ETIQUETA_ESTADO[estado]}
                   </span>
                   <button
                     type="button"
+                    className="icon-btn"
                     onClick={() => removeInventoryItem(item.id)}
-                    style={{
-                      background: 'none',
-                      border: 'none',
-                      color: 'var(--color-text-secondary)',
-                      cursor: 'pointer',
-                      fontSize: '1rem',
-                      padding: '4px',
-                    }}
                     title="Eliminar insumo"
+                    aria-label={`Eliminar ${item.nombre}`}
                   >
-                    🗑️
+                    <Trash2 size={16} />
                   </button>
                 </div>
               </li>
@@ -86,29 +148,38 @@ export default function InventoryModule() {
         </ul>
       )}
 
-      <button
-        type="button"
-        onClick={() => setIsModalOpen(true)}
-        style={{
-          marginTop: '12px',
-          width: '100%',
-          padding: '10px',
-          background: 'var(--color-bg)',
-          border: '1px dashed var(--color-primary)',
-          borderRadius: 'var(--radius-sm)',
-          color: 'var(--color-primary)',
-          fontWeight: 700,
-          cursor: 'pointer',
-        }}
-      >
-        + Registrar Insumo / Alimento
+      <button type="button" className="btn-dashed" onClick={() => setIsModalOpen(true)}>
+        <Plus size={16} /> Registrar insumo o alimento
       </button>
 
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Registrar Insumo">
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+        <form onSubmit={handleSubmit} className="form-stack">
           <div className="input-group">
-            <label className="input-label">Nombre del insumo / alimento</label>
+            <span className="input-label">Tipo de registro</span>
+            <div className="segmented">
+              <button
+                type="button"
+                className={tipo === 'alimento' ? 'active' : ''}
+                onClick={() => setTipo('alimento')}
+              >
+                Alimento
+              </button>
+              <button
+                type="button"
+                className={tipo === 'insumo' ? 'active' : ''}
+                onClick={() => setTipo('insumo')}
+              >
+                Otro insumo
+              </button>
+            </div>
+          </div>
+
+          <div className="input-group">
+            <label className="input-label" htmlFor="inv-nombre">
+              Nombre
+            </label>
             <input
+              id="inv-nombre"
               type="text"
               className="input-field"
               placeholder="Ej. Croquetas Royal Canin"
@@ -119,60 +190,128 @@ export default function InventoryModule() {
             />
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-            <div className="input-group">
-              <label className="input-label">Cantidad Total</label>
-              <input
-                type="number"
-                step="0.1"
-                className="input-field"
-                placeholder="Ej. 3000"
-                value={cantidadTotal}
-                onChange={(e) => setCantidadTotal(e.target.value)}
-                required
-              />
-            </div>
+          {tipo === 'alimento' ? (
+            <>
+              <div className="input-group">
+                <label className="input-label" htmlFor="inv-kg">
+                  Cantidad disponible (kg)
+                </label>
+                <input
+                  id="inv-kg"
+                  type="number"
+                  step="0.1"
+                  min="0"
+                  className="input-field"
+                  placeholder="Ej. 3"
+                  value={cantidadKg}
+                  onChange={(e) => setCantidadKg(e.target.value)}
+                  required
+                />
+                {gramosTotales > 0 && (
+                  <span className="field-hint">
+                    Equivale a {gramosTotales.toLocaleString('es-MX')} gramos
+                  </span>
+                )}
+              </div>
 
-            <div className="input-group">
-              <label className="input-label">Unidad</label>
-              <select
-                className="input-field"
-                value={unidad}
-                onChange={(e) => setUnidad(e.target.value)}
-              >
-                <option value="g">Gramos (g)</option>
-                <option value="kg">Kilogramos (kg)</option>
-                <option value="latas">Latas / Sobres</option>
-                <option value="pastillas">Pastillas / Dosis</option>
-                <option value="ml">Mililitros (ml)</option>
-              </select>
-            </div>
-          </div>
+              <div className="input-group">
+                <label className="input-label" htmlFor="inv-porcion">
+                  Ración diaria (gramos)
+                </label>
+                <input
+                  id="inv-porcion"
+                  type="number"
+                  step="1"
+                  min="1"
+                  className="input-field"
+                  placeholder={`Sugerida: ${porcionSugerida} g`}
+                  value={porcionManual}
+                  onChange={(e) => setPorcionManual(e.target.value)}
+                />
+                <span className="field-hint">
+                  <Lightbulb size={13} /> Ración automática para talla {talla.label} ({talla.rango}):{' '}
+                  <strong>{porcionSugerida} g/día</strong>. Déjalo vacío para usarla.
+                </span>
+              </div>
 
-          <div className="input-group">
-            <label className="input-label">Consumo diario estimado</label>
-            <input
-              type="number"
-              step="0.1"
-              className="input-field"
-              placeholder="Ej. 150 (g al día)"
-              value={consumoDiario}
-              onChange={(e) => setConsumoDiario(e.target.value)}
-              required
-            />
-            {cantidadTotal && consumoDiario && Number(consumoDiario) > 0 && (
-              <span style={{ fontSize: '0.8rem', color: 'var(--color-success)', fontWeight: 600, marginTop: '4px' }}>
-                💡 Durará aproximadamente {Math.floor(Number(cantidadTotal) / Number(consumoDiario))} días.
-              </span>
-            )}
-          </div>
+              {diasCalculados !== null && (
+                <div className={`calc-preview cal-${estadoInventario(diasCalculados)}`}>
+                  <span className="calc-dias">{diasCalculados} días de alimento</span>
+                  <span className="calc-detalle">
+                    {gramosTotales} g ÷ {porcionEfectiva} g/día ·{' '}
+                    {ETIQUETA_ESTADO[estadoInventario(diasCalculados)]}
+                  </span>
+                </div>
+              )}
+            </>
+          ) : (
+            <>
+              <div className="form-row">
+                <div className="input-group">
+                  <label className="input-label" htmlFor="inv-cantidad">
+                    Cantidad
+                  </label>
+                  <input
+                    id="inv-cantidad"
+                    type="number"
+                    step="0.1"
+                    min="0"
+                    className="input-field"
+                    placeholder="Ej. 12"
+                    value={cantidadOtro}
+                    onChange={(e) => setCantidadOtro(e.target.value)}
+                    required
+                  />
+                </div>
 
-          <button
-            type="submit"
-            className="btn"
-            style={{ background: 'var(--color-primary)', color: '#fff', padding: '14px', borderRadius: '12px' }}
-          >
-            Calcular y Guardar
+                <div className="input-group">
+                  <label className="input-label" htmlFor="inv-unidad">
+                    Unidad
+                  </label>
+                  <select
+                    id="inv-unidad"
+                    className="input-field"
+                    value={unidadOtro}
+                    onChange={(e) => setUnidadOtro(e.target.value)}
+                  >
+                    <option value="latas">Latas / Sobres</option>
+                    <option value="pastillas">Pastillas / Dosis</option>
+                    <option value="ml">Mililitros (ml)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="input-group">
+                <label className="input-label" htmlFor="inv-consumo">
+                  Consumo diario
+                </label>
+                <input
+                  id="inv-consumo"
+                  type="number"
+                  step="0.1"
+                  min="0"
+                  className="input-field"
+                  placeholder="Ej. 1"
+                  value={consumoOtro}
+                  onChange={(e) => setConsumoOtro(e.target.value)}
+                  required
+                />
+              </div>
+
+              {diasCalculados !== null && (
+                <div className={`calc-preview cal-${estadoInventario(diasCalculados)}`}>
+                  <span className="calc-dias">{diasCalculados} días de abasto</span>
+                  <span className="calc-detalle">
+                    {cantidadOtro} ÷ {consumoOtro}/día ·{' '}
+                    {ETIQUETA_ESTADO[estadoInventario(diasCalculados)]}
+                  </span>
+                </div>
+              )}
+            </>
+          )}
+
+          <button type="submit" className="btn btn-primary">
+            Calcular y guardar
           </button>
         </form>
       </Modal>
