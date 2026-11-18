@@ -12,8 +12,8 @@ export default defineConfig({
         name: 'VitalMascota',
         short_name: 'VitalMascota',
         description: 'Gestión integral de la salud de tu mascota, en familia',
-        theme_color: '#4f8cff',
-        background_color: '#ffffff',
+        theme_color: '#0f1117',
+        background_color: '#0f1117',
         display: 'standalone',
         orientation: 'portrait',
         scope: '/',
@@ -34,7 +34,35 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+        navigateFallback: '/index.html',
+        cleanupOutdatedCaches: true,
         runtimeCaching: [
+          {
+            // Navegación: la app y la ficha pública deben abrir sin red
+            urlPattern: ({ request }) => request.mode === 'navigate',
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'vitalmascota-pages',
+              networkTimeoutSeconds: 4,
+              expiration: {
+                maxEntries: 40,
+                maxAgeSeconds: 60 * 60 * 24 * 30,
+              },
+            },
+          },
+          {
+            // Ficha médica pública consultada por QR: se guarda para uso offline
+            urlPattern: /^https:\/\/firestore\.googleapis\.com\/.*/i,
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'expediente-medico',
+              networkTimeoutSeconds: 5,
+              expiration: {
+                maxEntries: 30,
+                maxAgeSeconds: 60 * 60 * 24 * 7,
+              },
+            },
+          },
           {
             urlPattern: /^https:\/\/.*tile\.openstreetmap\.org\/.*/i,
             handler: 'CacheFirst',
