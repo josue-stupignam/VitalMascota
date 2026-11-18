@@ -1,15 +1,23 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import html2canvas from 'html2canvas';
+import { Download, Gift, MapPin, Megaphone, PawPrint, Phone } from 'lucide-react';
 import Modal from '../ui/Modal';
-import { especieEmojis } from '../../data/mockData';
+import { useUser } from '../../context/UserContext';
 
 export default function MissingPetPoster({ pet, isOpen, onClose }) {
   const posterRef = useRef(null);
+  const { profile } = useUser();
   const [telefono, setTelefono] = useState('');
   const [recompensa, setRecompensa] = useState('');
   const [lugarExtravio, setLugarExtravio] = useState('');
   const [detalles, setDetalles] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
+
+  useEffect(() => {
+    if (profile?.telefono) {
+      setTelefono((actual) => actual || profile.telefono);
+    }
+  }, [profile]);
 
   if (!pet) return null;
 
@@ -35,16 +43,25 @@ export default function MissingPetPoster({ pet, isOpen, onClose }) {
   };
 
   const avatarUrl = pet.avatar_url || pet.foto;
-  const emoji = especieEmojis[pet.especie] || '🐾';
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="📢 Cartel Digital de Extravío">
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+          <Megaphone size={18} aria-hidden="true" /> Cartel digital de extravío
+        </span>
+      }
+    >
       <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-        {/* Formulario de personalización del cartel */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
           <div className="input-group">
-            <label className="input-label">Teléfono de contacto *</label>
+            <label className="input-label" htmlFor="cartel-telefono">
+              Teléfono de contacto *
+            </label>
             <input
+              id="cartel-telefono"
               type="tel"
               className="input-field"
               placeholder="Ej. +52 55 1234 5678"
@@ -53,8 +70,11 @@ export default function MissingPetPoster({ pet, isOpen, onClose }) {
             />
           </div>
           <div className="input-group">
-            <label className="input-label">Recompensa (Opcional)</label>
+            <label className="input-label" htmlFor="cartel-recompensa">
+              Recompensa (opcional)
+            </label>
             <input
+              id="cartel-recompensa"
               type="text"
               className="input-field"
               placeholder="Ej. $2,000 MXN"
@@ -65,8 +85,11 @@ export default function MissingPetPoster({ pet, isOpen, onClose }) {
         </div>
 
         <div className="input-group">
-          <label className="input-label">Última vez visto (Lugar / Colonia)</label>
+          <label className="input-label" htmlFor="cartel-lugar">
+            Última vez visto (lugar / colonia)
+          </label>
           <input
+            id="cartel-lugar"
             type="text"
             className="input-field"
             placeholder="Ej. Parque México, Condesa"
@@ -76,8 +99,11 @@ export default function MissingPetPoster({ pet, isOpen, onClose }) {
         </div>
 
         <div className="input-group">
-          <label className="input-label">Señas particulares</label>
+          <label className="input-label" htmlFor="cartel-senas">
+            Señas particulares
+          </label>
           <input
+            id="cartel-senas"
             type="text"
             className="input-field"
             placeholder="Ej. Mancha blanca en pecho, collar rojo"
@@ -86,7 +112,6 @@ export default function MissingPetPoster({ pet, isOpen, onClose }) {
           />
         </div>
 
-        {/* Vista previa del Cartel (Diseño de alto impacto descargable) */}
         <div
           ref={posterRef}
           style={{
@@ -111,7 +136,7 @@ export default function MissingPetPoster({ pet, isOpen, onClose }) {
               marginBottom: '10px',
             }}
           >
-            🚨 SE BUSCA 🚨
+            SE BUSCA
           </div>
 
           <div
@@ -136,7 +161,7 @@ export default function MissingPetPoster({ pet, isOpen, onClose }) {
                 style={{ width: '100%', height: '100%', objectFit: 'cover' }}
               />
             ) : (
-              <span style={{ fontSize: '4rem' }}>{emoji}</span>
+              <PawPrint size={64} color="#9aa0a6" aria-hidden="true" />
             )}
           </div>
 
@@ -144,18 +169,38 @@ export default function MissingPetPoster({ pet, isOpen, onClose }) {
             {pet.nombre.toUpperCase()}
           </h2>
           <p style={{ fontSize: '0.95rem', color: '#555', marginBottom: '8px' }}>
-            {pet.raza || pet.especie} • {pet.sexo || ''} • {pet.edad || ''}
+            {pet.raza || pet.especie} · {pet.sexo || ''} · {pet.edad || ''}
           </p>
 
           {detalles && (
-            <p style={{ fontSize: '0.85rem', color: '#333', background: '#fff5e0', padding: '6px', borderRadius: '6px', margin: '6px 0' }}>
+            <p
+              style={{
+                fontSize: '0.85rem',
+                color: '#333',
+                background: '#fff5e0',
+                padding: '6px',
+                borderRadius: '6px',
+                margin: '6px 0',
+              }}
+            >
               <strong>Señas:</strong> {detalles}
             </p>
           )}
 
           {lugarExtravio && (
-            <p style={{ fontSize: '0.85rem', color: '#333', margin: '6px 0' }}>
-              📍 <strong>Visto en:</strong> {lugarExtravio}
+            <p
+              style={{
+                fontSize: '0.85rem',
+                color: '#333',
+                margin: '6px 0',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 4,
+              }}
+            >
+              <MapPin size={14} aria-hidden="true" />
+              <strong>Visto en:</strong> {lugarExtravio}
             </p>
           )}
 
@@ -163,16 +208,20 @@ export default function MissingPetPoster({ pet, isOpen, onClose }) {
             <div
               style={{
                 background: '#e8f9ee',
-                color: '#34c759',
+                color: '#1f8a44',
                 border: '1px solid #34c759',
                 padding: '6px',
                 borderRadius: '8px',
                 fontWeight: 'bold',
                 fontSize: '1rem',
                 margin: '8px 0',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 6,
               }}
             >
-              💰 RECOMPENSA: {recompensa}
+              <Gift size={16} aria-hidden="true" /> RECOMPENSA: {recompensa}
             </div>
           )}
 
@@ -184,16 +233,34 @@ export default function MissingPetPoster({ pet, isOpen, onClose }) {
               borderRadius: '10px',
             }}
           >
-            <p style={{ fontSize: '0.75rem', fontWeight: '700', color: '#ff3b30', textTransform: 'uppercase' }}>
+            <p
+              style={{
+                fontSize: '0.75rem',
+                fontWeight: '700',
+                color: '#ff3b30',
+                textTransform: 'uppercase',
+              }}
+            >
               Si lo has visto o tienes informes llama urgente a:
             </p>
-            <p style={{ fontSize: '1.3rem', fontWeight: '900', color: '#1a1a2e', marginTop: '4px' }}>
-              📞 {telefono || 'Introduce un número'}
+            <p
+              style={{
+                fontSize: '1.3rem',
+                fontWeight: '900',
+                color: '#1a1a2e',
+                marginTop: '4px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 6,
+              }}
+            >
+              <Phone size={18} aria-hidden="true" />
+              {telefono || 'Introduce un número'}
             </p>
           </div>
         </div>
 
-        {/* Botón de descarga con html2canvas */}
         <button
           type="button"
           onClick={handleDownload}
@@ -206,9 +273,11 @@ export default function MissingPetPoster({ pet, isOpen, onClose }) {
             borderRadius: '12px',
             fontSize: '1rem',
             width: '100%',
+            gap: 8,
           }}
         >
-          {isGenerating ? 'Generando imagen…' : '📥 Descargar Cartel (PNG)'}
+          <Download size={18} aria-hidden="true" />
+          {isGenerating ? 'Generando imagen…' : 'Descargar cartel (PNG)'}
         </button>
       </div>
     </Modal>
