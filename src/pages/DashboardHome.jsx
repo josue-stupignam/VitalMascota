@@ -55,14 +55,24 @@ export default function DashboardHome() {
         icon="🐾"
       />
 
-      <PetSelector />
-      <PetStatusCard
-        onOpenPoster={() => setIsPosterOpen(true)}
-        onOpenSitter={() => setIsSitterOpen(true)}
-      />
-      <EventFeed eventos={eventos} />
-      <InventoryModule />
-      <TaskList />
+      <div className="dashboard-grid">
+        <div className="dash-pet">
+          <PetSelector />
+          <PetStatusCard
+            onOpenPoster={() => setIsPosterOpen(true)}
+            onOpenSitter={() => setIsSitterOpen(true)}
+          />
+        </div>
+        <div className="dash-alerts">
+          <EventFeed eventos={eventos} />
+        </div>
+        <div className="dash-inventory">
+          <InventoryModule />
+        </div>
+        <div className="dash-tasks">
+          <TaskList />
+        </div>
+      </div>
 
       {activePet && (
         <>

@@ -88,6 +88,54 @@ body {
   padding: 16px 16px calc(var(--navbar-height) + 16px);
 }
 
+/* ─── Grid del panel ─────────────────────────────────────────────────────── */
+
+.dashboard-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.dashboard-grid > * {
+  min-width: 0;
+}
+
+@media (min-width: 1024px) {
+  .page {
+    max-width: 1180px;
+    padding: 28px 32px 120px;
+  }
+
+  .dashboard-grid {
+    display: grid;
+    grid-template-columns: 1.15fr 1fr;
+    grid-template-areas:
+      'pet inventory'
+      'alerts tasks';
+    align-items: start;
+    gap: 24px;
+  }
+
+  .dash-pet {
+    grid-area: pet;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .dash-alerts {
+    grid-area: alerts;
+  }
+
+  .dash-inventory {
+    grid-area: inventory;
+  }
+
+  .dash-tasks {
+    grid-area: tasks;
+  }
+}
+
 /* ─── Page Header ────────────────────────────────────────────────────────── */
 
 .page-header {
