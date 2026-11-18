@@ -1,6 +1,7 @@
 import React from 'react';
+import { Plus } from 'lucide-react';
 import { usePet } from '../../context/PetContext';
-import { especieEmojis } from '../../data/mockData';
+import { getEspecieIcono } from '../../lib/especies';
 import '../../styles/pet-selector.css';
 
 export default function PetSelector() {
@@ -12,7 +13,7 @@ export default function PetSelector() {
         {pets.map((pet) => {
           const isActive = pet.id === activePetId;
           const avatarUrl = pet.avatar_url || pet.foto;
-          const emoji = especieEmojis[pet.especie] || '🐾';
+          const Icono = getEspecieIcono(pet.especie);
 
           return (
             <button
@@ -26,41 +27,32 @@ export default function PetSelector() {
                 {avatarUrl ? (
                   <img src={avatarUrl} alt={pet.nombre} className="pet-selector-img" />
                 ) : (
-                  <span className="pet-selector-emoji">{emoji}</span>
+                  <span className="pet-selector-emoji">
+                    <Icono size={26} />
+                  </span>
                 )}
                 {isActive && <div className="pet-selector-ring" />}
               </div>
               <span className={`pet-selector-name ${isActive ? 'active' : ''}`}>
                 {pet.nombre}
               </span>
-              <span className="pet-selector-species">{emoji}</span>
+              <span className="pet-selector-species">
+                <Icono size={13} />
+              </span>
             </button>
           );
         })}
 
-        {/* Botón para agregar una nueva mascota */}
         <button
           type="button"
           className="pet-selector-item"
           onClick={() => setShowWizard(true)}
-          style={{ opacity: 0.8 }}
           aria-label="Registrar nueva mascota"
         >
-          <div
-            className="pet-selector-avatar"
-            style={{
-              border: '2px dashed var(--color-primary)',
-              background: 'rgba(79, 140, 255, 0.08)',
-              color: 'var(--color-primary)',
-              fontSize: '1.4rem',
-              fontWeight: 'bold',
-            }}
-          >
-            +
+          <div className="pet-selector-avatar pet-selector-add">
+            <Plus size={24} />
           </div>
-          <span className="pet-selector-name" style={{ color: 'var(--color-primary)' }}>
-            Nueva
-          </span>
+          <span className="pet-selector-name pet-selector-add-label">Nueva</span>
         </button>
       </div>
     </div>

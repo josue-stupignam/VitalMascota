@@ -389,3 +389,146 @@
   margin-top: 10px;
 }
 
+
+/* Cierre accesible del wizard */
+.onboarding-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  padding: 0;
+  border: 1px solid var(--color-border);
+  border-radius: 50%;
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  z-index: 10;
+  transition: background 0.2s, color 0.2s;
+}
+
+.onboarding-close:hover {
+  background: var(--color-surface-2);
+  color: var(--color-text);
+}
+
+/* Layout de formulario */
+.form-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.btn-back,
+.btn-next,
+.btn-finish {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.btn-back svg,
+.btn-next svg,
+.btn-finish svg {
+  flex-shrink: 0;
+}
+
+/* Selector de talla */
+.talla-hint {
+  margin: 0 0 8px;
+}
+
+.talla-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.talla-card {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 14px 12px;
+  text-align: left;
+  font-family: inherit;
+  border: 2px solid var(--color-border);
+  border-radius: 14px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s, transform 0.2s;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.talla-card:hover {
+  border-color: var(--color-primary);
+}
+
+.talla-card.selected {
+  border-color: var(--color-primary);
+  background: var(--color-primary-soft);
+  transform: translateY(-1px);
+}
+
+.talla-nombre {
+  font-size: 0.98rem;
+  font-weight: 800;
+}
+
+.talla-rango {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
+
+.talla-racion {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--color-success);
+}
+
+.talla-error {
+  margin: 8px 0 0;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--color-danger);
+}
+
+.selection-card,
+.suggestion-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.species-card {
+  flex-direction: column;
+  justify-content: center;
+}
+
+.species-emoji-lg,
+.step-emoji,
+.photo-icon,
+.suggestion-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-primary);
+}
+
+.suggestion-check {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  color: var(--color-success);
+}

@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useMemo, useCall
 import { useAuth } from './AuthContext';
 import { db } from '../firebaseConfig';
 import { collection, query, where, onSnapshot, doc, addDoc, updateDoc, deleteDoc } from 'firebase/firestore';
-import { clinicasCercanas, especieEmojis, familia } from '../data/mockData';
+import { clinicasCercanas, familia } from '../data/mockData';
 import CryptoJS from 'crypto-js';
 import { CRYPTO_SECRET } from '../lib/cryptoSecret';
 import { TALLAS } from '../lib/pets';
@@ -246,7 +246,6 @@ export function PetProvider({ children }) {
     setActivePet: setActivePetId,
     addPet,
     removePet,
-    especieEmojis,
     updateActivePetMedico,
     addInventoryItem,
     removeInventoryItem,

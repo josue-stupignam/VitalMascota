@@ -1,6 +1,8 @@
 import React, { useRef } from 'react';
+import { Megaphone, MoveHorizontal, UserRoundCheck } from 'lucide-react';
 import { usePet } from '../../context/PetContext';
-import { especieEmojis } from '../../data/mockData';
+import { getEspecieIcono } from '../../lib/especies';
+import { getTalla } from '../../lib/pets';
 import '../../styles/global.css';
 
 export default function PetStatusCard({ onOpenPoster, onOpenSitter }) {
@@ -10,10 +12,11 @@ export default function PetStatusCard({ onOpenPoster, onOpenSitter }) {
 
   if (!activePet) return null;
 
-  const emoji = especieEmojis[activePet.especie] || '🐾';
+  const Icono = getEspecieIcono(activePet.especie);
   const avatarUrl = activePet.avatar_url || activePet.foto;
+  const talla = getTalla(activePet.talla);
+  const saludable = activePet.estado === 'saludable';
 
-  // Manejo de Swipe Touch para cambiar de mascota a la izquierda / derecha
   const handleTouchStart = (e) => {
     touchStartX.current = e.touches[0].clientX;
   };
@@ -27,11 +30,9 @@ export default function PetStatusCard({ onOpenPoster, onOpenSitter }) {
     if (Math.abs(diffX) > 60 && pets.length > 1) {
       const currentIndex = pets.findIndex((p) => p.id === activePetId);
       if (diffX > 0) {
-        // Swipe left -> Siguiente mascota
         const nextIndex = (currentIndex + 1) % pets.length;
         setActivePet(pets[nextIndex].id);
       } else {
-        // Swipe right -> Mascota anterior
         const prevIndex = (currentIndex - 1 + pets.length) % pets.length;
         setActivePet(pets[prevIndex].id);
       }
@@ -44,21 +45,10 @@ export default function PetStatusCard({ onOpenPoster, onOpenSitter }) {
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
-      style={{ userSelect: 'none', position: 'relative', overflow: 'hidden' }}
     >
       {pets.length > 1 && (
-        <div
-          style={{
-            position: 'absolute',
-            top: '8px',
-            right: '12px',
-            fontSize: '0.72rem',
-            background: 'rgba(0,0,0,0.2)',
-            padding: '2px 8px',
-            borderRadius: '12px',
-          }}
-        >
-          ⇄ Desliza para cambiar
+        <div className="pet-swipe-hint">
+          <MoveHorizontal size={12} /> Desliza para cambiar
         </div>
       )}
 
@@ -66,85 +56,32 @@ export default function PetStatusCard({ onOpenPoster, onOpenSitter }) {
         {avatarUrl ? (
           <img src={avatarUrl} alt={activePet.nombre} className="pet-avatar" />
         ) : (
-          <div
-            className="pet-avatar"
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              background: 'rgba(255, 255, 255, 0.2)',
-              fontSize: '2rem',
-            }}
-          >
-            {emoji}
+          <div className="pet-avatar pet-avatar-icon">
+            <Icono size={34} />
           </div>
         )}
 
-        <div style={{ flex: 1 }}>
+        <div className="pet-status-info">
           <div className="pet-name">{activePet.nombre}</div>
           <div className="pet-detail">
             {activePet.raza || activePet.especie} • {activePet.edad || 'Edad N/A'}
             {activePet.peso ? ` • ${activePet.peso} kg` : ''}
           </div>
-          <span className="status-badge">
-            {activePet.estado === 'saludable' ? '🟢 Saludable' : '🟡 En observación'}
-          </span>
+          <div className="pet-badges">
+            <span className={`status-badge ${saludable ? 'ok' : 'warn'}`}>
+              {saludable ? 'Saludable' : 'En observación'}
+            </span>
+            <span className="talla-badge">{talla.label}</span>
+          </div>
         </div>
       </div>
 
-      {/* Acciones Rápidas: Cartel de Extravío y Cuidador / Pet Sitter */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: '1fr 1fr',
-          gap: '8px',
-          marginTop: '14px',
-          paddingTop: '12px',
-          borderTop: '1px solid rgba(255, 255, 255, 0.2)',
-        }}
-      >
-        <button
-          type="button"
-          onClick={onOpenPoster}
-          style={{
-            background: 'rgba(255,255,255,0.2)',
-            border: 'none',
-            color: '#fff',
-            borderRadius: '10px',
-            padding: '8px 12px',
-            fontSize: '0.8rem',
-            fontWeight: 'bold',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '6px',
-            transition: 'background 0.2s',
-          }}
-        >
-          <span>📢</span> Cartel Extravío
+      <div className="pet-quick-actions">
+        <button type="button" onClick={onOpenPoster} className="pet-quick-btn">
+          <Megaphone size={16} /> Cartel Extravío
         </button>
-
-        <button
-          type="button"
-          onClick={onOpenSitter}
-          style={{
-            background: 'rgba(255,255,255,0.2)',
-            border: 'none',
-            color: '#fff',
-            borderRadius: '10px',
-            padding: '8px 12px',
-            fontSize: '0.8rem',
-            fontWeight: 'bold',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '6px',
-            transition: 'background 0.2s',
-          }}
-        >
-          <span>🤝</span> Modo Cuidador
+        <button type="button" onClick={onOpenSitter} className="pet-quick-btn">
+          <UserRoundCheck size={16} /> Modo Cuidador
         </button>
       </div>
     </div>

@@ -1,39 +1,52 @@
 import React, { useState } from 'react';
+import {
+  ArrowLeft,
+  ArrowRight,
+  Camera,
+  Check,
+  Circle,
+  PawPrint,
+  Sparkles,
+  X,
+} from 'lucide-react';
 import { usePet } from '../../context/PetContext';
-import { sugerenciasPorEspecie, especieEmojis } from '../../data/mockData';
+import { sugerenciasPorEspecie } from '../../data/mockData';
+import { TALLAS, TALLAS_KEYS, getTalla } from '../../lib/pets';
+import { getEspecieIcono } from '../../lib/especies';
+import { iconoTarea } from '../../lib/tareaIconos';
 import '../../styles/onboarding.css';
+
+const ESPECIES = [
+  { key: 'perro', label: 'Perro' },
+  { key: 'gato', label: 'Gato' },
+  { key: 'ave', label: 'Ave' },
+  { key: 'conejo', label: 'Conejo' },
+  { key: 'hamster', label: 'Hámster' },
+  { key: 'exotico', label: 'Otro/Exótico' },
+];
 
 export default function OnboardingWizard({ onClose }) {
   const { addPet } = usePet();
   const [step, setStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Form states
   const [especie, setEspecie] = useState('perro');
   const [nombre, setNombre] = useState('');
   const [raza, setRaza] = useState('');
   const [edad, setEdad] = useState('');
   const [peso, setPeso] = useState('');
+  const [talla, setTalla] = useState('');
   const [sexo, setSexo] = useState('macho');
   const [foto, setFoto] = useState('');
   const [selectedTareas, setSelectedTareas] = useState([]);
 
-  const availableSpecies = [
-    { key: 'perro', label: 'Perro', emoji: '🐕' },
-    { key: 'gato', label: 'Gato', emoji: '🐈' },
-    { key: 'ave', label: 'Ave', emoji: '🐦' },
-    { key: 'conejo', label: 'Conejo', emoji: '🐇' },
-    { key: 'hamster', label: 'Hámster', emoji: '🐹' },
-    { key: 'exotico', label: 'Otro/Exótico', emoji: '🦎' },
-  ];
+  const EspecieIcono = getEspecieIcono(especie);
 
   const handlePhotoUpload = (e) => {
     const file = e.target.files?.[0];
     if (file) {
       const reader = new FileReader();
-      reader.onloadend = () => {
-        setFoto(reader.result);
-      };
+      reader.onloadend = () => setFoto(reader.result);
       reader.readAsDataURL(file);
     }
   };
@@ -42,26 +55,33 @@ export default function OnboardingWizard({ onClose }) {
     if (selectedTareas.some((item) => item.tarea === t.tarea)) {
       setSelectedTareas(selectedTareas.filter((item) => item.tarea !== t.tarea));
     } else {
-      setSelectedTareas([...selectedTareas, { ...t, completada: false, id: Date.now().toString() + Math.random().toString(36).substring(2, 5) }]);
+      setSelectedTareas([
+        ...selectedTareas,
+        {
+          ...t,
+          completada: false,
+          id: Date.now().toString() + Math.random().toString(36).substring(2, 5),
+        },
+      ]);
     }
   };
 
   const handleFinish = async () => {
-    if (!nombre.trim()) return;
+    if (!nombre.trim() || !talla) return;
     setIsSubmitting(true);
     try {
-      const petPayload = {
+      await addPet({
         nombre: nombre.trim(),
         especie,
         raza: raza.trim(),
         edad: edad.trim(),
         peso: Number(peso) || 0,
+        talla,
         sexo,
         avatar_url: foto,
-        foto: foto,
+        foto,
         tareas: selectedTareas,
-      };
-      await addPet(petPayload);
+      });
       if (onClose) onClose();
     } catch (err) {
       console.error('Error al registrar mascota:', err);
@@ -70,32 +90,20 @@ export default function OnboardingWizard({ onClose }) {
     }
   };
 
-  const currentSuggestions = sugerenciasPorEspecie[especie] || sugerenciasPorEspecie['perro'];
+  const currentSuggestions = sugerenciasPorEspecie[especie] || sugerenciasPorEspecie.perro;
+  const datosCompletos = nombre.trim().length > 0 && Boolean(talla);
 
   return (
-    <div className="onboarding-page" style={{ position: 'relative' }}>
-      {/* Botón explícito para cancelar/cerrar y evitar trampas de navegación */}
+    <div className="onboarding-page">
       <button
         type="button"
+        className="onboarding-close"
         onClick={onClose}
-        style={{
-          position: 'absolute',
-          top: '16px',
-          right: '16px',
-          background: 'none',
-          border: 'none',
-          fontSize: '1.4rem',
-          color: 'var(--color-text-secondary)',
-          cursor: 'pointer',
-          padding: '8px',
-          zIndex: 10,
-        }}
         aria-label="Cerrar registro"
       >
-        ✕
+        <X size={22} />
       </button>
 
-      {/* Indicador de progreso */}
       <div className="onboarding-progress">
         {[1, 2, 3, 4].map((s) => (
           <div
@@ -106,43 +114,53 @@ export default function OnboardingWizard({ onClose }) {
       </div>
       <div className="onboarding-step-label">Paso {step} de 4</div>
 
-      {/* Paso 1: Especie */}
       {step === 1 && (
         <div className="onboarding-step">
           <div className="step-header">
-            <span className="step-emoji">🐾</span>
+            <span className="step-emoji">
+              <PawPrint size={30} />
+            </span>
             <h2 className="step-title">¿Qué mascota deseas registrar?</h2>
             <p className="step-hint">Selecciona la especie de tu compañero</p>
           </div>
 
           <div className="selection-grid cols-2 species-grid">
-            {availableSpecies.map((sp) => (
-              <button
-                type="button"
-                key={sp.key}
-                className={`selection-card species-card ${especie === sp.key ? 'selected' : ''}`}
-                onClick={() => setEspecie(sp.key)}
-              >
-                <span className="species-emoji-lg">{sp.emoji}</span>
-                <span className="selection-label">{sp.label}</span>
-              </button>
-            ))}
+            {ESPECIES.map((sp) => {
+              const Icono = getEspecieIcono(sp.key);
+              return (
+                <button
+                  type="button"
+                  key={sp.key}
+                  className={`selection-card species-card ${especie === sp.key ? 'selected' : ''}`}
+                  onClick={() => setEspecie(sp.key)}
+                >
+                  <span className="species-emoji-lg">
+                    <Icono size={34} />
+                  </span>
+                  <span className="selection-label">{sp.label}</span>
+                </button>
+              );
+            })}
           </div>
         </div>
       )}
 
-      {/* Paso 2: Información básica */}
       {step === 2 && (
         <div className="onboarding-step">
           <div className="step-header">
-            <span className="step-emoji">{especieEmojis[especie] || '🐾'}</span>
+            <span className="step-emoji">
+              <EspecieIcono size={30} />
+            </span>
             <h2 className="step-title">Cuéntanos sobre tu mascota</h2>
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+          <div className="form-stack">
             <div className="input-group">
-              <label className="input-label">Nombre de tu mascota *</label>
+              <label className="input-label" htmlFor="pet-nombre">
+                Nombre de tu mascota *
+              </label>
               <input
+                id="pet-nombre"
                 type="text"
                 className="input-field"
                 placeholder="Ej. Luna, Max, Firulais"
@@ -154,8 +172,11 @@ export default function OnboardingWizard({ onClose }) {
             </div>
 
             <div className="input-group">
-              <label className="input-label">Raza (Opcional)</label>
+              <label className="input-label" htmlFor="pet-raza">
+                Raza (Opcional)
+              </label>
               <input
+                id="pet-raza"
                 type="text"
                 className="input-field"
                 placeholder="Ej. Golden Retriever, Mestizo"
@@ -164,10 +185,13 @@ export default function OnboardingWizard({ onClose }) {
               />
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+            <div className="form-row">
               <div className="input-group">
-                <label className="input-label">Edad aprox.</label>
+                <label className="input-label" htmlFor="pet-edad">
+                  Edad aprox.
+                </label>
                 <input
+                  id="pet-edad"
                   type="text"
                   className="input-field"
                   placeholder="Ej. 2 años"
@@ -177,10 +201,14 @@ export default function OnboardingWizard({ onClose }) {
               </div>
 
               <div className="input-group">
-                <label className="input-label">Peso (kg)</label>
+                <label className="input-label" htmlFor="pet-peso">
+                  Peso (kg)
+                </label>
                 <input
+                  id="pet-peso"
                   type="number"
                   step="0.1"
+                  min="0"
                   className="input-field"
                   placeholder="Ej. 12.5"
                   value={peso}
@@ -190,14 +218,44 @@ export default function OnboardingWizard({ onClose }) {
             </div>
 
             <div className="input-group">
-              <label className="input-label">Sexo</label>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+              <span className="input-label">
+                Talla de tu mascota *
+              </span>
+              <p className="step-hint talla-hint">
+                Se usa para calcular su ración diaria de alimento
+              </p>
+              <div className="talla-grid">
+                {TALLAS_KEYS.map((key) => {
+                  const t = TALLAS[key];
+                  const selected = talla === key;
+                  return (
+                    <button
+                      type="button"
+                      key={key}
+                      className={`talla-card ${selected ? 'selected' : ''}`}
+                      onClick={() => setTalla(key)}
+                      aria-pressed={selected}
+                    >
+                      <span className="talla-nombre">{t.label}</span>
+                      <span className="talla-rango">{t.rango}</span>
+                      <span className="talla-racion">{t.porcionDiaria} g al día</span>
+                    </button>
+                  );
+                })}
+              </div>
+              {!talla && (
+                <p className="talla-error">Elige una talla para continuar</p>
+              )}
+            </div>
+
+            <div className="input-group">
+              <span className="input-label">Sexo</span>
+              <div className="form-row">
                 <button
                   type="button"
                   className={`selection-card ${sexo === 'macho' ? 'selected' : ''}`}
                   onClick={() => setSexo('macho')}
                 >
-                  <span className="selection-emoji">♂️</span>
                   <span className="selection-label">Macho</span>
                 </button>
                 <button
@@ -205,7 +263,6 @@ export default function OnboardingWizard({ onClose }) {
                   className={`selection-card ${sexo === 'hembra' ? 'selected' : ''}`}
                   onClick={() => setSexo('hembra')}
                 >
-                  <span className="selection-emoji">♀️</span>
                   <span className="selection-label">Hembra</span>
                 </button>
               </div>
@@ -214,11 +271,12 @@ export default function OnboardingWizard({ onClose }) {
         </div>
       )}
 
-      {/* Paso 3: Foto */}
       {step === 3 && (
         <div className="onboarding-step">
           <div className="step-header">
-            <span className="step-emoji">📸</span>
+            <span className="step-emoji">
+              <Camera size={30} />
+            </span>
             <h2 className="step-title">Agrega una foto de {nombre || 'tu mascota'}</h2>
             <p className="step-hint">Se mostrará en su perfil y en caso de emergencia</p>
           </div>
@@ -228,7 +286,9 @@ export default function OnboardingWizard({ onClose }) {
               <img src={foto} alt="Vista previa" className="photo-preview" />
             ) : (
               <div className="photo-placeholder">
-                <span className="photo-icon">📷</span>
+                <span className="photo-icon">
+                  <Camera size={30} />
+                </span>
                 <span className="photo-text">Toca para subir una foto</span>
                 <span className="photo-subtext">JPG, PNG o WEBP</span>
               </div>
@@ -242,22 +302,19 @@ export default function OnboardingWizard({ onClose }) {
           </label>
 
           {foto && (
-            <button
-              type="button"
-              className="btn-change-photo"
-              onClick={() => setFoto('')}
-            >
+            <button type="button" className="btn-change-photo" onClick={() => setFoto('')}>
               Eliminar foto
             </button>
           )}
         </div>
       )}
 
-      {/* Paso 4: Tareas sugeridas */}
       {step === 4 && (
         <div className="onboarding-step">
           <div className="step-header">
-            <span className="step-emoji">✨</span>
+            <span className="step-emoji">
+              <Sparkles size={30} />
+            </span>
             <h2 className="step-title">Rutinas recomendadas</h2>
             <p className="step-hint">Elige las tareas diarias iniciales para {nombre}</p>
           </div>
@@ -265,6 +322,7 @@ export default function OnboardingWizard({ onClose }) {
           <div className="suggestions-list">
             {currentSuggestions.map((sug, idx) => {
               const isSelected = selectedTareas.some((item) => item.tarea === sug.tarea);
+              const Icono = iconoTarea(sug.tarea);
               return (
                 <button
                   type="button"
@@ -272,9 +330,13 @@ export default function OnboardingWizard({ onClose }) {
                   className={`suggestion-card ${isSelected ? 'selected' : ''}`}
                   onClick={() => toggleTareaSelection(sug)}
                 >
-                  <span className="suggestion-icon">{sug.icono}</span>
+                  <span className="suggestion-icon">
+                    <Icono size={20} />
+                  </span>
                   <span className="suggestion-label">{sug.tarea}</span>
-                  <span className="suggestion-check">{isSelected ? '✅' : '⚪'}</span>
+                  <span className="suggestion-check">
+                    {isSelected ? <Check size={18} /> : <Circle size={18} />}
+                  </span>
                 </button>
               );
             })}
@@ -285,22 +347,13 @@ export default function OnboardingWizard({ onClose }) {
         </div>
       )}
 
-      {/* Botones de navegación inferiores */}
       <div className="onboarding-actions">
         {step > 1 ? (
-          <button
-            type="button"
-            className="btn-back"
-            onClick={() => setStep((s) => s - 1)}
-          >
-            ← Volver
+          <button type="button" className="btn-back" onClick={() => setStep((s) => s - 1)}>
+            <ArrowLeft size={18} /> Volver
           </button>
         ) : (
-          <button
-            type="button"
-            className="btn-back"
-            onClick={onClose}
-          >
+          <button type="button" className="btn-back" onClick={onClose}>
             Cancelar
           </button>
         )}
@@ -309,19 +362,19 @@ export default function OnboardingWizard({ onClose }) {
           <button
             type="button"
             className="btn-next"
-            disabled={step === 2 && !nombre.trim()}
+            disabled={step === 2 && !datosCompletos}
             onClick={() => setStep((s) => s + 1)}
           >
-            Continuar →
+            Continuar <ArrowRight size={18} />
           </button>
         ) : (
           <button
             type="button"
             className="btn-finish"
-            disabled={isSubmitting}
+            disabled={isSubmitting || !talla}
             onClick={handleFinish}
           >
-            {isSubmitting ? 'Guardando…' : 'Finalizar y Crear 🐾'}
+            {isSubmitting ? 'Guardando…' : 'Finalizar registro'}
           </button>
         )}
       </div>
