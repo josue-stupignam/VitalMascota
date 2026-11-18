@@ -32,7 +32,9 @@
 }
 
 .nav-item .nav-icon {
-  font-size: 1.4rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   transition: transform 0.2s;
 }
 
@@ -49,7 +51,7 @@
 }
 
 .nav-item.nav-emergency .nav-icon {
-  font-size: 1.6rem;
+  color: inherit;
 }
 
 .nav-item.nav-emergency.active {
