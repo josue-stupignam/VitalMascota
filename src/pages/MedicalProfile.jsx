@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { ShieldAlert, Stethoscope } from 'lucide-react';
 import PageHeader from '../components/layout/PageHeader';
 import WeightChart from '../components/medical/WeightChart';
 import AllergyList from '../components/medical/AllergyList';
@@ -24,14 +25,14 @@ export default function MedicalProfile() {
       <PageHeader
         title="Perfil Médico"
         subtitle={`Expediente clínico de ${mascota.nombre}`}
-        icon="🩺"
+        icon={<Stethoscope size={22} />}
       />
 
       {/* Info del veterinario */}
       <div className="card vet-card">
-        <p><strong>🩺 Veterinario:</strong> {medico.veterinario}</p>
-        <p><strong>🏥 Clínica:</strong> {medico.clinica}</p>
-        <p><strong>📅 Próxima cita:</strong> {medico.proximaCita}</p>
+        <p><strong>Veterinario:</strong> {medico.veterinario}</p>
+        <p><strong>Clínica:</strong> {medico.clinica}</p>
+        <p><strong>Próxima cita:</strong> {medico.proximaCita}</p>
       </div>
 
       <WeightChart historial={medico.historialPeso} />
@@ -43,7 +44,7 @@ export default function MedicalProfile() {
         className="btn btn-emergency-transfer"
         onClick={() => setShowQR(true)}
       >
-        🚑 Transferencia One-Click
+        <ShieldAlert size={18} /> Transferencia One-Click
       </button>
 
       <QREmergencyModal isOpen={showQR} onClose={() => setShowQR(false)} />

@@ -41,7 +41,7 @@ export default function useDeviceFeatures() {
       setNotifications({ permission: result, supported: true });
 
       if (result === 'granted') {
-        new Notification('VitalMascota 🐾', {
+        new Notification('VitalMascota', {
           body: '¡Notificaciones activadas! Te avisaremos de citas y recordatorios.',
           icon: '/icons/icon-192x192.png',
         });

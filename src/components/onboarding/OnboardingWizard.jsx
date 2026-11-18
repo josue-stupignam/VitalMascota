@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   ArrowLeft,
   ArrowRight,
@@ -41,6 +41,14 @@ export default function OnboardingWizard({ onClose }) {
   const [selectedTareas, setSelectedTareas] = useState([]);
 
   const EspecieIcono = getEspecieIcono(especie);
+
+  useEffect(() => {
+    const alPresionar = (e) => {
+      if (e.key === 'Escape' && onClose) onClose();
+    };
+    window.addEventListener('keydown', alPresionar);
+    return () => window.removeEventListener('keydown', alPresionar);
+  }, [onClose]);
 
   const handlePhotoUpload = (e) => {
     const file = e.target.files?.[0];

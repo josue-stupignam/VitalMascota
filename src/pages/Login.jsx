@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { PawPrint, TriangleAlert } from 'lucide-react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import '../styles/auth.css';
@@ -38,7 +39,9 @@ export default function Login() {
     <div className="login-page">
       {/* Logo y marca */}
       <div className="login-brand">
-        <span className="login-logo">🐾</span>
+        <span className="login-logo">
+          <PawPrint size={30} />
+        </span>
         <h1 className="login-title">VitalMascota</h1>
         <p className="login-subtitle">El cuidado de tu mascota, en familia</p>
       </div>
@@ -81,7 +84,7 @@ export default function Login() {
 
         {(error || localError) && (
           <div className="login-error">
-            <span>⚠️</span> {error || localError}
+            <TriangleAlert size={16} /> {error || localError}
           </div>
         )}
 
