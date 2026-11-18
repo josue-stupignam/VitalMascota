@@ -121,6 +121,10 @@ incompleta" con la lista de variables que faltan.
    - `VITE_FIREBASE_APP_ID`
    - `VITE_FIREBASE_MEASUREMENT_ID` (opcional)
    - `VITE_CRYPTO_SECRET` (obligatoria para leer expedientes ya cifrados)
+
+   Todas deben tener visibilidad **config**, no **secret**: Vercel rechaza
+   `visibility: secret` en variables con prefijo público (`VITE_`), porque se incrustan en el
+   bundle. Marca las ocho como `config`.
 2. Settings → **General → Node.js Version**: 22.x (Vite 7 exige Node 20.19+ / 22.12+;
    el repo fija `"engines": { "node": ">=22.12.0" }` y `.nvmrc`).
 3. **Deployments → Redeploy** sin caché de build. Las variables `VITE_*` se incrustan al
