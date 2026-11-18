@@ -1,46 +1,72 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { doc, updateDoc } from 'firebase/firestore';
+import { CheckSquare, Plus, UserRound } from 'lucide-react';
 import { db } from '../../firebaseConfig';
 import { usePet } from '../../context/PetContext';
+import { useUser } from '../../context/UserContext';
 import Modal from '../ui/Modal';
+import { iconoTarea } from '../../lib/tareaIconos';
+import { vibrate, vibrateSuccess } from '../../lib/haptics';
 import '../../styles/global.css';
 
 export default function TaskList() {
-  const { tareas, toggleTarea, activePet, addPet } = usePet();
+  const { tareas, toggleTarea, activePet, familia } = usePet();
+  const { profile } = useUser();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [nuevaTarea, setNuevaTarea] = useState('');
-  const [icono, setIcono] = useState('🐾');
+  const [asignadoA, setAsignadoA] = useState('');
+  const [guardando, setGuardando] = useState(false);
 
   const tareasList = tareas || [];
   const completedCount = tareasList.filter((t) => t.completada).length;
   const progressPercent = tareasList.length > 0 ? (completedCount / tareasList.length) * 100 : 0;
 
+  const responsables = [
+    ...(profile?.nombre ? [{ id: profile.familyId || 'owner', nombre: profile.nombre }] : []),
+    ...(familia || []).filter((f) => f.nombre !== profile?.nombre),
+  ];
+
+  useEffect(() => {
+    if (!isModalOpen) {
+      setNuevaTarea('');
+      setAsignadoA('');
+    }
+  }, [isModalOpen]);
+
   const handleAddTask = async (e) => {
     e.preventDefault();
-    if (!nuevaTarea.trim() || !activePet) return;
+    if (!nuevaTarea.trim() || !activePet || guardando) return;
 
+    setGuardando(true);
     const newTask = {
       id: Date.now().toString(),
       tarea: nuevaTarea.trim(),
-      icono: icono || '🐾',
       completada: false,
+      asignadoA: asignadoA || '',
     };
 
-    const updatedTasks = [...tareasList, newTask];
-    // Persist to active pet in Firestore
     try {
-      await updateDoc(doc(db, 'pets', activePet.id), { tareas: updatedTasks });
-      setNuevaTarea('');
+      await updateDoc(doc(db, 'pets', activePet.id), { tareas: [...tareasList, newTask] });
+      vibrateSuccess();
       setIsModalOpen(false);
     } catch (err) {
       console.error('Error al agregar tarea:', err);
+    } finally {
+      setGuardando(false);
     }
+  };
+
+  const handleToggle = (id) => {
+    vibrate();
+    toggleTarea(id);
   };
 
   return (
     <div className="card">
       <div className="card-title-row">
-        <h3 className="card-title">✅ Rutinas y Cuidados Diarios</h3>
+        <h3 className="card-title">
+          <CheckSquare size={18} /> Rutinas y cuidados diarios
+        </h3>
         <span className="task-counter">
           {completedCount} / {tareasList.length}
         </span>
@@ -51,49 +77,53 @@ export default function TaskList() {
       </div>
 
       {tareasList.length === 0 ? (
-        <p className="empty-state">No hay tareas programadas para hoy.</p>
+        <div className="empty-state">
+          <p>No hay tareas programadas para hoy.</p>
+          <p className="empty-hint">
+            Agrega rutinas de alimentación, paseo o medicina y asígnalas a un miembro de la familia.
+          </p>
+        </div>
       ) : (
         <ul className="task-list">
-          {tareasList.map((task) => (
-            <li key={task.id} className={`task-card ${task.completada ? 'task-done' : ''}`}>
-              <label className="task-label">
-                <input
-                  type="checkbox"
-                  className="task-checkbox"
-                  checked={!!task.completada}
-                  onChange={() => toggleTarea(task.id)}
-                />
-                <span style={{ fontSize: '1.2rem', marginRight: '6px' }}>{task.icono || '🐾'}</span>
-                <span className="task-name">{task.tarea}</span>
-              </label>
-            </li>
-          ))}
+          {tareasList.map((task) => {
+            const Icono = iconoTarea(task.tarea);
+            return (
+              <li key={task.id} className={`task-card ${task.completada ? 'task-done' : ''}`}>
+                <label className="task-label">
+                  <input
+                    type="checkbox"
+                    className="task-checkbox"
+                    checked={!!task.completada}
+                    onChange={() => handleToggle(task.id)}
+                  />
+                  <span className="task-icon">
+                    <Icono size={17} />
+                  </span>
+                  <span className="task-name">{task.tarea}</span>
+                </label>
+                {task.asignadoA && (
+                  <span className="task-assignee">
+                    <UserRound size={12} /> {task.asignadoA}
+                  </span>
+                )}
+              </li>
+            );
+          })}
         </ul>
       )}
 
-      <button
-        type="button"
-        onClick={() => setIsModalOpen(true)}
-        style={{
-          marginTop: '12px',
-          width: '100%',
-          padding: '10px',
-          background: 'var(--color-bg)',
-          border: '1px dashed var(--color-primary)',
-          borderRadius: 'var(--radius-sm)',
-          color: 'var(--color-primary)',
-          fontWeight: 700,
-          cursor: 'pointer',
-        }}
-      >
-        + Añadir Tarea Diaria
+      <button type="button" className="btn-dashed" onClick={() => setIsModalOpen(true)}>
+        <Plus size={16} /> Añadir tarea diaria
       </button>
 
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Nueva Tarea Diaria">
-        <form onSubmit={handleAddTask} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Nueva tarea diaria">
+        <form onSubmit={handleAddTask} className="form-stack">
           <div className="input-group">
-            <label className="input-label">Descripción de la tarea</label>
+            <label className="input-label" htmlFor="task-desc">
+              Descripción de la tarea
+            </label>
             <input
+              id="task-desc"
               type="text"
               className="input-field"
               placeholder="Ej. Dar pastilla para el corazón"
@@ -105,34 +135,29 @@ export default function TaskList() {
           </div>
 
           <div className="input-group">
-            <label className="input-label">Icono</label>
-            <div style={{ display: 'flex', gap: '8px' }}>
-              {['💊', '🍖', '🐕', '🧹', '💧', '🛁'].map((ic) => (
-                <button
-                  key={ic}
-                  type="button"
-                  style={{
-                    padding: '8px 12px',
-                    fontSize: '1.2rem',
-                    borderRadius: '8px',
-                    border: icono === ic ? '2px solid var(--color-primary)' : '1px solid var(--color-border)',
-                    background: icono === ic ? '#eef3ff' : 'var(--color-bg)',
-                    cursor: 'pointer',
-                  }}
-                  onClick={() => setIcono(ic)}
-                >
-                  {ic}
-                </button>
+            <label className="input-label" htmlFor="task-asignado">
+              Asignar a
+            </label>
+            <select
+              id="task-asignado"
+              className="input-field"
+              value={asignadoA}
+              onChange={(e) => setAsignadoA(e.target.value)}
+            >
+              <option value="">Sin asignar</option>
+              {responsables.map((persona) => (
+                <option key={persona.id} value={persona.nombre}>
+                  {persona.nombre}
+                </option>
               ))}
-            </div>
+            </select>
+            <span className="field-hint">
+              Las tareas se sincronizan en tiempo real con los demás dispositivos de la familia.
+            </span>
           </div>
 
-          <button
-            type="submit"
-            className="btn"
-            style={{ background: 'var(--color-primary)', color: '#fff', padding: '14px', borderRadius: '12px' }}
-          >
-            Guardar Tarea
+          <button type="submit" className="btn btn-primary" disabled={guardando}>
+            {guardando ? 'Guardando…' : 'Guardar tarea'}
           </button>
         </form>
       </Modal>
