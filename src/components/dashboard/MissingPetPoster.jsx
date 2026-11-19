@@ -10,8 +10,11 @@ export default function MissingPetPoster({ pet, isOpen, onClose }) {
   const [telefono, setTelefono] = useState('');
   const [recompensa, setRecompensa] = useState('');
   const [lugarExtravio, setLugarExtravio] = useState('');
+  const [referencias, setReferencias] = useState('');
   const [detalles, setDetalles] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
+  const [errorExport, setErrorExport] = useState('');
+  const [fotoRender, setFotoRender] = useState('');
 
   useEffect(() => {
     if (profile?.telefono) {
@@ -19,30 +22,73 @@ export default function MissingPetPoster({ pet, isOpen, onClose }) {
     }
   }, [profile]);
 
+  const avatarUrl = pet?.avatar_url || pet?.foto || '';
+
+  // html2canvas necesita la foto como Base64 para exportarla sin depender de CORS.
+  useEffect(() => {
+    if (!isOpen || !avatarUrl) {
+      setFotoRender('');
+      return undefined;
+    }
+    if (avatarUrl.startsWith('data:')) {
+      setFotoRender(avatarUrl);
+      return undefined;
+    }
+
+    let cancelado = false;
+    setFotoRender(avatarUrl);
+    fetch(avatarUrl)
+      .then((respuesta) => respuesta.blob())
+      .then(
+        (blob) =>
+          new Promise((resolve) => {
+            const lector = new FileReader();
+            lector.onloadend = () => resolve(lector.result);
+            lector.readAsDataURL(blob);
+          })
+      )
+      .then((dataUrl) => {
+        if (!cancelado && typeof dataUrl === 'string') setFotoRender(dataUrl);
+      })
+      .catch(() => {});
+
+    return () => {
+      cancelado = true;
+    };
+  }, [isOpen, avatarUrl]);
+
   if (!pet) return null;
 
   const handleDownload = async () => {
     if (!posterRef.current) return;
     setIsGenerating(true);
+    setErrorExport('');
     try {
+      if (document.fonts?.ready) {
+        await document.fonts.ready;
+      }
       const canvas = await html2canvas(posterRef.current, {
         scale: 2,
         useCORS: true,
+        allowTaint: true,
         backgroundColor: '#ffffff',
+        imageTimeout: 15000,
+        logging: false,
       });
       const image = canvas.toDataURL('image/png');
       const link = document.createElement('a');
       link.href = image;
       link.download = `SE_BUSCA_${pet.nombre.toUpperCase()}.png`;
+      document.body.appendChild(link);
       link.click();
+      document.body.removeChild(link);
     } catch (err) {
       console.error('Error al generar cartel:', err);
+      setErrorExport('No se pudo generar la imagen. Revisa tu conexión e inténtalo de nuevo.');
     } finally {
       setIsGenerating(false);
     }
   };
-
-  const avatarUrl = pet.avatar_url || pet.foto;
 
   return (
     <Modal
@@ -95,6 +141,20 @@ export default function MissingPetPoster({ pet, isOpen, onClose }) {
             placeholder="Ej. Parque México, Condesa"
             value={lugarExtravio}
             onChange={(e) => setLugarExtravio(e.target.value)}
+          />
+        </div>
+
+        <div className="input-group">
+          <label className="input-label" htmlFor="cartel-referencias">
+            Última vez visto (Entre qué calles o referencias)
+          </label>
+          <textarea
+            id="cartel-referencias"
+            className="input-field cartel-textarea"
+            rows="2"
+            placeholder="Ej. Entre Calle 5 y Av. Central, cerca de la tienda de la esquina."
+            value={referencias}
+            onChange={(e) => setReferencias(e.target.value)}
           />
         </div>
 
@@ -153,11 +213,10 @@ export default function MissingPetPoster({ pet, isOpen, onClose }) {
               border: '2px solid #ddd',
             }}
           >
-            {avatarUrl ? (
+            {fotoRender ? (
               <img
-                src={avatarUrl}
+                src={fotoRender}
                 alt={pet.nombre}
-                crossOrigin="anonymous"
                 style={{ width: '100%', height: '100%', objectFit: 'cover' }}
               />
             ) : (
@@ -187,7 +246,7 @@ export default function MissingPetPoster({ pet, isOpen, onClose }) {
             </p>
           )}
 
-          {lugarExtravio && (
+          {(lugarExtravio || referencias) && (
             <p
               style={{
                 fontSize: '0.85rem',
@@ -197,10 +256,12 @@ export default function MissingPetPoster({ pet, isOpen, onClose }) {
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: 4,
+                flexWrap: 'wrap',
               }}
             >
               <MapPin size={14} aria-hidden="true" />
-              <strong>Visto en:</strong> {lugarExtravio}
+              <strong>Visto en:</strong> {lugarExtravio || 'Zona sin especificar'}
+              {referencias ? ` — ${referencias}` : ''}
             </p>
           )}
 
@@ -260,6 +321,12 @@ export default function MissingPetPoster({ pet, isOpen, onClose }) {
             </p>
           </div>
         </div>
+
+        {errorExport && (
+          <p className="form-error" role="alert">
+            {errorExport}
+          </p>
+        )}
 
         <button
           type="button"
