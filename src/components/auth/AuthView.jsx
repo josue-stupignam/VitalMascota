@@ -1,17 +1,34 @@
 import React, { useState } from 'react';
-import { PawPrint, TriangleAlert } from 'lucide-react';
+import { Check, PawPrint, TriangleAlert, X } from 'lucide-react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import Captcha from './Captcha';
 import '../../styles/auth.css';
+
+const EMAIL_VALIDO = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+const MAYUSCULA = /[A-Z]/;
+const SIMBOLO = /[!@#$%^&*(),.?":{}|<>]/;
+
+const reglasPassword = (password) => [
+  { id: 'largo', texto: 'Al menos 10 caracteres', cumple: password.length >= 10 },
+  { id: 'mayuscula', texto: 'Una letra mayúscula', cumple: MAYUSCULA.test(password) },
+  { id: 'simbolo', texto: 'Un símbolo especial (!@#$%^&*…)', cumple: SIMBOLO.test(password) },
+];
+
+const passwordSegura = (password) => reglasPassword(password).every((r) => r.cumple);
 
 export default function AuthView() {
   const { user, login, register } = useAuth();
   const navigate = useNavigate();
+  const [nombre, setNombre] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [isRegistering, setIsRegistering] = useState(false);
   const [localError, setLocalError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [captchaOk, setCaptchaOk] = useState(false);
+  const [captchaKey, setCaptchaKey] = useState(0);
 
   // Redirigir si ya tiene sesión iniciada
   if (user) {
@@ -21,21 +38,50 @@ export default function AuthView() {
   const toggleAuthMode = () => {
     setIsRegistering((prev) => !prev);
     // Reiniciar campos explícitamente para evitar trampas visuales y autocompletados erróneos
+    setNombre('');
     setEmail('');
     setPassword('');
+    setConfirmPassword('');
     setLocalError('');
+    setCaptchaKey((prev) => prev + 1);
+  };
+
+  const validar = () => {
+    if (isRegistering && !nombre.trim()) {
+      return 'Escribe tu nombre completo.';
+    }
+    if (!EMAIL_VALIDO.test(email.trim())) {
+      return 'El formato de correo no es válido.';
+    }
+    if (isRegistering && !passwordSegura(password)) {
+      return 'La contraseña debe tener al menos 10 caracteres, una mayúscula y un símbolo especial.';
+    }
+    if (isRegistering && password !== confirmPassword) {
+      return 'Las contraseñas no coinciden.';
+    }
+    if (!captchaOk) {
+      return 'Resuelve la verificación anti-bots para continuar.';
+    }
+    return '';
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLocalError('');
+
+    const mensajeValidacion = validar();
+    if (mensajeValidacion) {
+      setLocalError(mensajeValidacion);
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
       if (isRegistering) {
-        await register(email, password);
+        await register(nombre.trim(), email.trim(), password);
       } else {
-        await login(email, password);
+        await login(email.trim(), password);
       }
       navigate('/dashboard', { replace: true });
     } catch (err) {
@@ -46,15 +92,18 @@ export default function AuthView() {
       } else if (err.code === 'auth/email-already-in-use') {
         errorMsg = 'Este correo ya está registrado. Por favor inicia sesión.';
       } else if (err.code === 'auth/weak-password') {
-        errorMsg = 'La contraseña debe tener al menos 6 caracteres.';
+        errorMsg = 'La contraseña debe tener al menos 10 caracteres, una mayúscula y un símbolo especial.';
       } else if (err.code === 'auth/invalid-email') {
         errorMsg = 'El formato de correo no es válido.';
       }
       setLocalError(errorMsg);
+      setCaptchaKey((prev) => prev + 1);
     } finally {
       setIsSubmitting(false);
     }
   };
+
+  const reglas = reglasPassword(password);
 
   return (
     <div className="login-page">
@@ -67,6 +116,24 @@ export default function AuthView() {
       </div>
 
       <form className="login-form" onSubmit={handleSubmit}>
+        {isRegistering && (
+          <div className="input-group">
+            <label htmlFor="auth-nombre" className="input-label">
+              Nombre completo
+            </label>
+            <input
+              id="auth-nombre"
+              type="text"
+              className="input-field"
+              placeholder="Ej. Ana López"
+              value={nombre}
+              onChange={(e) => setNombre(e.target.value)}
+              required
+              autoComplete="name"
+            />
+          </div>
+        )}
+
         <div className="input-group">
           <label htmlFor="auth-email" className="input-label">
             Correo electrónico
@@ -92,14 +159,49 @@ export default function AuthView() {
             id="auth-password"
             type="password"
             className="input-field"
-            placeholder="Mínimo 6 caracteres"
+            placeholder={isRegistering ? 'Mínimo 10 caracteres' : 'Tu contraseña'}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
-            minLength={6}
             autoComplete={isRegistering ? 'new-password' : 'current-password'}
           />
+          {isRegistering && (
+            <ul className="password-rules">
+              {reglas.map((regla) => (
+                <li
+                  key={regla.id}
+                  className={`password-rule ${regla.cumple ? 'rule-ok' : 'rule-pending'}`}
+                >
+                  {regla.cumple ? <Check size={13} aria-hidden="true" /> : <X size={13} aria-hidden="true" />}
+                  {regla.texto}
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
+
+        {isRegistering && (
+          <div className="input-group">
+            <label htmlFor="auth-confirm" className="input-label">
+              Confirmar contraseña
+            </label>
+            <input
+              id="auth-confirm"
+              type="password"
+              className="input-field"
+              placeholder="Repite tu contraseña"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              required
+              autoComplete="new-password"
+            />
+            {confirmPassword && password !== confirmPassword && (
+              <p className="field-hint field-hint-error">Las contraseñas no coinciden.</p>
+            )}
+          </div>
+        )}
+
+        <Captcha onChange={setCaptchaOk} resetKey={captchaKey} />
 
         {localError && (
           <div className="login-error" role="alert">
@@ -129,6 +231,9 @@ export default function AuthView() {
             style={{ cursor: 'pointer', textDecoration: 'underline' }}
             role="button"
             tabIndex={0}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') toggleAuthMode();
+            }}
           >
             {isRegistering
               ? '¿Ya tienes cuenta? Inicia sesión aquí'

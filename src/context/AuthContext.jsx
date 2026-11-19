@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { auth } from '../firebaseConfig';
+import { auth, db } from '../firebaseConfig';
+import { doc, setDoc } from 'firebase/firestore';
 import { 
   onAuthStateChanged, 
   signInWithEmailAndPassword, 
@@ -28,8 +29,20 @@ export function AuthProvider({ children }) {
     return signInWithEmailAndPassword(auth, email, password);
   };
 
-  const register = (email, password) => {
-    return createUserWithEmailAndPassword(auth, email, password);
+  const register = async (nombre, email, password) => {
+    const credencial = await createUserWithEmailAndPassword(auth, email, password);
+    await setDoc(
+      doc(db, 'users', credencial.user.uid),
+      {
+        nombre: nombre.trim(),
+        email,
+        familyId: credencial.user.uid,
+        role: 'owner',
+        familyMembers: [],
+      },
+      { merge: true }
+    );
+    return credencial;
   };
 
   const logout = () => {

@@ -173,3 +173,60 @@
     opacity: 1;
   }
 }
+
+/* Verificación anti-bots */
+.captcha-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 12px;
+  margin-bottom: 8px;
+  border: 1px dashed var(--color-border);
+  border-radius: 12px;
+  background: var(--color-surface-2);
+}
+
+.captcha-question {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.captcha-refresh {
+  flex-shrink: 0;
+}
+
+/* Política de contraseña */
+.password-rules {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.password-rule {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.password-rule.rule-ok {
+  color: var(--color-success);
+}
+
+.password-rule.rule-pending {
+  color: var(--color-text-secondary);
+}
+
+.field-hint-error {
+  color: var(--color-danger);
+  font-weight: 600;
+}
