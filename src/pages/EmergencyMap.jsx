@@ -9,6 +9,12 @@ import '../styles/map.css';
 
 const CENTRO_POR_DEFECTO = { lat: 19.4326, lng: -99.1332 };
 const RADIO_METROS = 5000;
+const OVERPASS_ENDPOINTS = [
+  'https://overpass-api.de/api/interpreter',
+  'https://overpass.kumi.systems/api/interpreter',
+  'https://overpass.private.coffee/api/interpreter',
+];
+const TIEMPO_POR_INTENTO = 9000;
 
 function distanciaKm(lat1, lng1, lat2, lng2) {
   const R = 6371;
@@ -20,6 +26,117 @@ function distanciaKm(lat1, lng1, lat2, lng2) {
       Math.cos((lat2 * Math.PI) / 180) *
       Math.sin(dLng / 2) ** 2;
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+async function pedirJson(url, opciones, signal) {
+  const intento = new AbortController();
+  const abortarExterno = () => intento.abort();
+  signal.addEventListener('abort', abortarExterno, { once: true });
+  const temporizador = setTimeout(() => intento.abort(), TIEMPO_POR_INTENTO);
+
+  try {
+    const respuesta = await fetch(url, { ...opciones, signal: intento.signal });
+    if (!respuesta.ok) throw new Error(`HTTP ${respuesta.status}`);
+    return await respuesta.json();
+  } finally {
+    clearTimeout(temporizador);
+    signal.removeEventListener('abort', abortarExterno);
+  }
+}
+
+async function consultarOverpass(lat, lng, signal) {
+  const query = `[out:json][timeout:25];(node["amenity"="veterinary"](around:${RADIO_METROS},${lat},${lng});way["amenity"="veterinary"](around:${RADIO_METROS},${lat},${lng});relation["amenity"="veterinary"](around:${RADIO_METROS},${lat},${lng}););out center tags;`;
+  let ultimoError = null;
+
+  for (const endpoint of OVERPASS_ENDPOINTS) {
+    if (signal.aborted) break;
+    try {
+      const data = await pedirJson(
+        endpoint,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: `data=${encodeURIComponent(query)}`,
+        },
+        signal
+      );
+      return data.elements || [];
+    } catch (error) {
+      if (signal.aborted) break;
+      ultimoError = error;
+    }
+  }
+
+  throw ultimoError || new Error('Overpass no respondió');
+}
+
+async function consultarNominatim(lat, lng, signal) {
+  const delta = 0.06;
+  const viewbox = `${lng - delta},${lat + delta},${lng + delta},${lat - delta}`;
+  const url =
+    'https://nominatim.openstreetmap.org/search' +
+    `?format=jsonv2&addressdetails=1&limit=30&q=veterinaria&bounded=1&viewbox=${viewbox}`;
+  const resultados = await pedirJson(url, { headers: { Accept: 'application/json' } }, signal);
+  return Array.isArray(resultados) ? resultados : [];
+}
+
+function mapearOverpass(elementos, lat, lng) {
+  const vistas = new Set();
+  return elementos
+    .map((el) => {
+      const elLat = el.lat ?? el.center?.lat;
+      const elLng = el.lon ?? el.center?.lon;
+      if (!elLat || !elLng) return null;
+      const clave = `${elLat.toFixed(5)},${elLng.toFixed(5)}`;
+      if (vistas.has(clave)) return null;
+      vistas.add(clave);
+      return {
+        id: `${el.type}-${el.id}`,
+        nombre: el.tags?.name || 'Veterinaria sin nombre',
+        lat: elLat,
+        lng: elLng,
+        direccion: el.tags?.['addr:street']
+          ? `${el.tags['addr:street']} ${el.tags['addr:housenumber'] || ''}`.trim()
+          : 'Dirección no disponible',
+        telefono: el.tags?.phone || el.tags?.['contact:phone'] || 'Teléfono no disponible',
+        abierto: el.tags?.opening_hours ? !/closed/i.test(el.tags.opening_hours) : null,
+        horario: el.tags?.opening_hours || '',
+        distanciaKm: distanciaKm(lat, lng, elLat, elLng),
+      };
+    })
+    .filter(Boolean)
+    .filter((c) => c.distanciaKm <= RADIO_METROS / 1000 + 0.5)
+    .sort((a, b) => a.distanciaKm - b.distanciaKm)
+    .map((c) => ({ ...c, distancia: `${c.distanciaKm.toFixed(1)} km` }));
+}
+
+function mapearNominatim(resultados, lat, lng) {
+  const vistas = new Set();
+  return resultados
+    .map((r) => {
+      const elLat = Number(r.lat);
+      const elLng = Number(r.lon);
+      if (!Number.isFinite(elLat) || !Number.isFinite(elLng)) return null;
+      const clave = `${elLat.toFixed(5)},${elLng.toFixed(5)}`;
+      if (vistas.has(clave)) return null;
+      vistas.add(clave);
+      const distancia = distanciaKm(lat, lng, elLat, elLng);
+      if (distancia > RADIO_METROS / 1000 + 0.5) return null;
+      return {
+        id: `nominatim-${r.osm_type || 'n'}-${r.osm_id || r.place_id}`,
+        nombre: r.name || (r.display_name || 'Veterinaria').split(',')[0],
+        lat: elLat,
+        lng: elLng,
+        direccion: r.display_name || 'Dirección no disponible',
+        telefono: 'Teléfono no disponible',
+        abierto: null,
+        horario: '',
+        distanciaKm: distancia,
+      };
+    })
+    .filter(Boolean)
+    .sort((a, b) => a.distanciaKm - b.distanciaKm)
+    .map((c) => ({ ...c, distancia: `${c.distanciaKm.toFixed(1)} km` }));
 }
 
 export default function EmergencyMap() {
@@ -59,51 +176,38 @@ export default function EmergencyMap() {
     if (peticionRef.current) peticionRef.current.abort();
     const controller = new AbortController();
     peticionRef.current = controller;
-    const timeoutId = setTimeout(() => controller.abort(), 15000);
 
     try {
-      const query = `[out:json][timeout:25];(node["amenity"="veterinary"](around:${RADIO_METROS},${lat},${lng});way["amenity"="veterinary"](around:${RADIO_METROS},${lat},${lng});relation["amenity"="veterinary"](around:${RADIO_METROS},${lat},${lng}););out center tags;`;
+      let encontradas = [];
+      let fuente = 'overpass';
 
-      const response = await fetch('https://overpass-api.de/api/interpreter', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: `data=${encodeURIComponent(query)}`,
-        signal: controller.signal,
-      });
+      try {
+        const elementos = await consultarOverpass(lat, lng, controller.signal);
+        encontradas = mapearOverpass(elementos, lat, lng);
+      } catch (error) {
+        if (controller.signal.aborted) throw error;
+        console.warn('Overpass no disponible, probando Nominatim:', error.message);
+      }
 
-      if (!response.ok) throw new Error(`Overpass respondió ${response.status}`);
-      const data = await response.json();
+      if (encontradas.length === 0 && !controller.signal.aborted) {
+        try {
+          const resultados = await consultarNominatim(lat, lng, controller.signal);
+          encontradas = mapearNominatim(resultados, lat, lng);
+          fuente = 'nominatim';
+        } catch (error) {
+          if (controller.signal.aborted) throw error;
+          console.warn('Nominatim no disponible:', error.message);
+        }
+      }
 
-      const vistas = new Set();
-      const mapped = (data.elements || [])
-        .map((el) => {
-          const elLat = el.lat ?? el.center?.lat;
-          const elLng = el.lon ?? el.center?.lon;
-          if (!elLat || !elLng) return null;
-          const clave = `${elLat.toFixed(5)},${elLng.toFixed(5)}`;
-          if (vistas.has(clave)) return null;
-          vistas.add(clave);
-          return {
-            id: `${el.type}-${el.id}`,
-            nombre: el.tags?.name || 'Veterinaria sin nombre',
-            lat: elLat,
-            lng: elLng,
-            direccion: el.tags?.['addr:street']
-              ? `${el.tags['addr:street']} ${el.tags['addr:housenumber'] || ''}`.trim()
-              : 'Dirección no disponible',
-            telefono: el.tags?.phone || el.tags?.['contact:phone'] || 'Teléfono no disponible',
-            abierto: !/closed/i.test(el.tags?.opening_hours || ''),
-            horario: el.tags?.opening_hours || 'Horario no especificado',
-            distanciaKm: distanciaKm(lat, lng, elLat, elLng),
-          };
-        })
-        .filter(Boolean)
-        .sort((a, b) => a.distanciaKm - b.distanciaKm)
-        .map((c) => ({ ...c, distancia: `${c.distanciaKm.toFixed(1)} km` }));
-
-      if (mapped.length > 0) {
-        setClinicas(mapped);
+      if (encontradas.length > 0) {
+        setClinicas(encontradas);
         setUsandoRespaldo(false);
+        setErrorMsg(
+          fuente === 'nominatim'
+            ? 'Resultados de OpenStreetMap sin horarios ni teléfonos. Confirma antes de acudir.'
+            : null
+        );
       } else {
         setClinicas(clinicasCercanas);
         setUsandoRespaldo(true);
@@ -120,7 +224,6 @@ export default function EmergencyMap() {
           : 'El servicio de mapas no respondió. Mostrando clínicas de referencia.'
       );
     } finally {
-      clearTimeout(timeoutId);
       if (peticionRef.current === controller) peticionRef.current = null;
       setIsSearching(false);
     }
@@ -144,7 +247,7 @@ export default function EmergencyMap() {
         icon={<Siren size={22} />}
       />
 
-      {avisoUbicacion && !usandoRespaldo && (
+      {avisoUbicacion && (
         <div className="location-warning">
           <MapPinOff size={16} /> {avisoUbicacion}
         </div>

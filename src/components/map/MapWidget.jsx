@@ -1,5 +1,5 @@
-import React from 'react';
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import React, { useEffect } from 'react';
+import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import '../../styles/map.css';
@@ -25,6 +25,23 @@ const clinicIcon = L.divIcon({
   popupAnchor: [0, -26],
 });
 
+function MapController({ userPosition }) {
+  const map = useMap();
+
+  useEffect(() => {
+    const temporizador = setTimeout(() => map.invalidateSize(), 150);
+    return () => clearTimeout(temporizador);
+  }, [map]);
+
+  useEffect(() => {
+    if (userPosition?.[0] && userPosition?.[1]) {
+      map.setView(userPosition, map.getZoom(), { animate: true });
+    }
+  }, [map, userPosition]);
+
+  return null;
+}
+
 export default function MapWidget({ userPosition, clinicas = [] }) {
   if (!userPosition || !userPosition[0] || !userPosition[1]) return null;
 
@@ -41,6 +58,8 @@ export default function MapWidget({ userPosition, clinicas = [] }) {
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
 
+        <MapController userPosition={userPosition} />
+
         <Marker position={userPosition} icon={userIcon}>
           <Popup>Tu ubicación actual</Popup>
         </Marker>
@@ -54,8 +73,8 @@ export default function MapWidget({ userPosition, clinicas = [] }) {
                 {c.telefono && c.telefono !== 'Teléfono no disponible' && (
                   <p>{c.telefono}</p>
                 )}
-                <span className={`clinic-status ${c.abierto ? 'open' : 'closed'}`}>
-                  {c.abierto ? 'Abierto' : 'Cerrado'}
+                <span className={`clinic-status ${c.abierto === null ? 'unknown' : c.abierto ? 'open' : 'closed'}`}>
+                  {c.abierto === null ? 'Horario no disponible' : c.abierto ? 'Abierto' : 'Cerrado'}
                 </span>
               </div>
             </Popup>
