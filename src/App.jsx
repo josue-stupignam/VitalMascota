@@ -28,7 +28,7 @@ export default function App() {
     <div className="app-container">
       {/* Wizard modal globally rendered */}
       {showWizard && (
-        <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', zIndex: 9999, background: 'var(--color-bg)', overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
+        <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'var(--color-bg)', overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
           <OnboardingWizard onClose={() => setShowWizard(false)} />
         </div>
       )}

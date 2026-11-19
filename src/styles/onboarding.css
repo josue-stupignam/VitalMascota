@@ -5,13 +5,10 @@
   min-height: 100dvh;
   display: flex;
   flex-direction: column;
-  padding: 24px 20px calc(72px + env(safe-area-inset-bottom, 0px));
+  padding: 24px 20px calc(40px + env(safe-area-inset-bottom, 0px));
   background: var(--color-surface);
   max-width: 480px;
   margin: 0 auto;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  overscroll-behavior: contain;
 }
 
 /* Progress dots */
@@ -232,14 +229,17 @@
 
 /* Bottom navigation buttons */
 .onboarding-actions {
-  position: sticky;
-  bottom: 0;
   display: flex;
+  flex-wrap: wrap;
   gap: 10px;
-  margin-top: auto;
-  padding-top: 24px;
-  padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+  margin-top: 28px;
+  padding-top: 8px;
   background: var(--color-surface);
+}
+
+.onboarding-actions .form-error {
+  flex-basis: 100%;
+  margin: 0;
 }
 
 .btn-back {

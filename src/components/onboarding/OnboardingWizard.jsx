@@ -191,7 +191,6 @@ export default function OnboardingWizard({ onClose }) {
                 value={nombre}
                 onChange={(e) => setNombre(e.target.value)}
                 required
-                autoFocus
               />
             </div>
 
