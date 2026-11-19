@@ -493,3 +493,12 @@
   flex-direction: column;
   gap: 12px;
 }
+
+/* Textareas de tamaño fijo en el expediente */
+.medical-form textarea.medical-textarea {
+  resize: none;
+  height: 96px;
+  min-height: 96px;
+  max-height: 96px;
+  overflow-y: auto;
+}

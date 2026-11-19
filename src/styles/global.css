@@ -1469,3 +1469,36 @@ body {
   align-items: center;
   justify-content: center;
 }
+
+.task-delete {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+
+.task-delete:hover {
+  background: var(--color-danger-bg);
+  color: var(--color-danger);
+}
+
+.task-delete:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.cartel-textarea {
+  resize: none;
+  height: 72px;
+  min-height: 72px;
+  max-height: 72px;
+}

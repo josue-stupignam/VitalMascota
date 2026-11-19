@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { doc, updateDoc } from 'firebase/firestore';
-import { CheckSquare, Plus, UserRound } from 'lucide-react';
+import { CheckSquare, Plus, Trash2, UserRound } from 'lucide-react';
 import { db } from '../../firebaseConfig';
 import { usePet } from '../../context/PetContext';
 import { useUser } from '../../context/UserContext';
@@ -16,6 +16,7 @@ export default function TaskList() {
   const [nuevaTarea, setNuevaTarea] = useState('');
   const [asignadoA, setAsignadoA] = useState('');
   const [guardando, setGuardando] = useState(false);
+  const [eliminandoId, setEliminandoId] = useState('');
 
   const tareasList = tareas || [];
   const completedCount = tareasList.filter((t) => t.completada).length;
@@ -59,6 +60,20 @@ export default function TaskList() {
   const handleToggle = (id) => {
     vibrate();
     toggleTarea(id);
+  };
+
+  const handleDelete = async (id) => {
+    if (!activePet || eliminandoId) return;
+    setEliminandoId(id);
+    try {
+      const restantes = tareasList.filter((t) => t.id !== id);
+      await updateDoc(doc(db, 'pets', activePet.id), { tareas: restantes });
+      vibrate();
+    } catch (err) {
+      console.error('Error al eliminar tarea:', err);
+    } finally {
+      setEliminandoId('');
+    }
   };
 
   return (
@@ -106,6 +121,16 @@ export default function TaskList() {
                     <UserRound size={12} /> {task.asignadoA}
                   </span>
                 )}
+                <button
+                  type="button"
+                  className="task-delete"
+                  onClick={() => handleDelete(task.id)}
+                  disabled={eliminandoId === task.id}
+                  aria-label={`Eliminar la tarea ${task.tarea}`}
+                  title="Eliminar tarea"
+                >
+                  <Trash2 size={15} aria-hidden="true" />
+                </button>
               </li>
             );
           })}

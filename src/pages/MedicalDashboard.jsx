@@ -122,14 +122,6 @@ export default function MedicalDashboard() {
   const handleSave = async (e) => {
     e.preventDefault();
     const detalle = formData.descripcion.trim();
-    const requiereDetalle =
-      activeTab === 'vacunas' || activeTab === 'alergias' || activeTab === 'cirugias';
-
-    if (requiereDetalle && detalle.length < 10) {
-      setErrorMsg('El detalle es obligatorio: escribe al menos 10 caracteres (sin contar espacios).');
-      return;
-    }
-
     setErrorMsg('');
 
     try {
@@ -213,10 +205,8 @@ export default function MedicalDashboard() {
       </label>
       <textarea
         id="med-detalle"
-        className="input-field"
+        className="input-field medical-textarea"
         rows="3"
-        required
-        minLength={10}
         value={formData.descripcion}
         onChange={set('descripcion')}
         placeholder={
@@ -227,7 +217,7 @@ export default function MedicalDashboard() {
             : 'Ej. Esterilización con recuperación completa en 10 días.'
         }
       />
-      <span className="field-hint">Campo obligatorio: describe al menos 10 caracteres.</span>
+      <span className="field-hint">Opcional: agrega síntomas, causa o cualquier detalle útil.</span>
     </div>
   );
 
@@ -591,13 +581,12 @@ export default function MedicalDashboard() {
           {activeTab === 'bitacora' && (
             <div className="input-group">
               <label className="input-label" htmlFor="med-nota">
-                Síntoma, conducta o nota del día *
+                Síntoma, conducta o nota del día
               </label>
               <textarea
                 id="med-nota"
-                className="input-field"
+                className="input-field medical-textarea"
                 rows="3"
-                required
                 value={formData.nota}
                 onChange={set('nota')}
                 placeholder="Ej. Durmió más de lo normal y rechazó el desayuno."
