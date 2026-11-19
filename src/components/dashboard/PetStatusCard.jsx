@@ -1,14 +1,12 @@
-import React, { useRef } from 'react';
-import { Megaphone, MoveHorizontal, UserRoundCheck } from 'lucide-react';
+import React from 'react';
+import { Megaphone, UserRoundCheck } from 'lucide-react';
 import { usePet } from '../../context/PetContext';
 import { getEspecieIcono } from '../../lib/especies';
 import { getTalla } from '../../lib/pets';
 import '../../styles/global.css';
 
 export default function PetStatusCard({ onOpenPoster, onOpenSitter }) {
-  const { pets, activePet, activePetId, setActivePet } = usePet();
-  const touchStartX = useRef(0);
-  const touchEndX = useRef(0);
+  const { activePet } = usePet();
 
   if (!activePet) return null;
 
@@ -17,41 +15,8 @@ export default function PetStatusCard({ onOpenPoster, onOpenSitter }) {
   const talla = getTalla(activePet.talla);
   const saludable = activePet.estado === 'saludable';
 
-  const handleTouchStart = (e) => {
-    touchStartX.current = e.touches[0].clientX;
-  };
-
-  const handleTouchMove = (e) => {
-    touchEndX.current = e.touches[0].clientX;
-  };
-
-  const handleTouchEnd = () => {
-    const diffX = touchStartX.current - touchEndX.current;
-    if (Math.abs(diffX) > 60 && pets.length > 1) {
-      const currentIndex = pets.findIndex((p) => p.id === activePetId);
-      if (diffX > 0) {
-        const nextIndex = (currentIndex + 1) % pets.length;
-        setActivePet(pets[nextIndex].id);
-      } else {
-        const prevIndex = (currentIndex - 1 + pets.length) % pets.length;
-        setActivePet(pets[prevIndex].id);
-      }
-    }
-  };
-
   return (
-    <div
-      className="card pet-status-card"
-      onTouchStart={handleTouchStart}
-      onTouchMove={handleTouchMove}
-      onTouchEnd={handleTouchEnd}
-    >
-      {pets.length > 1 && (
-        <div className="pet-swipe-hint">
-          <MoveHorizontal size={12} /> Desliza para cambiar
-        </div>
-      )}
-
+    <div className="card pet-status-card">
       <div className="pet-status-header">
         {avatarUrl ? (
           <img src={avatarUrl} alt={activePet.nombre} className="pet-avatar" />
