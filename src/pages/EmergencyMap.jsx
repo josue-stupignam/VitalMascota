@@ -161,11 +161,15 @@ export default function EmergencyMap() {
         setLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude });
         setGpsListo(true);
       },
-      () => {
-        setAvisoUbicacion('No se pudo obtener tu ubicación: mostrando clínicas de referencia en CDMX.');
+      (error) => {
+        setAvisoUbicacion(
+          error?.code === 1
+            ? 'Permiso de ubicación denegado: mostrando CDMX. Toca el mapa para ajustar el punto.'
+            : 'No se pudo obtener tu ubicación a tiempo: mostrando CDMX. Toca el mapa para ajustar el punto.'
+        );
         setGpsListo(true);
       },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      { enableHighAccuracy: false, timeout: 8000, maximumAge: 60000 }
     );
   }, []);
 
@@ -259,7 +263,15 @@ export default function EmergencyMap() {
         </div>
       )}
 
-      <MapWidget userPosition={userPosition} clinicas={clinicas} />
+      <MapWidget
+        userPosition={userPosition}
+        clinicas={clinicas}
+        onPickLocation={(punto) => {
+          setLocation(punto);
+          setAvisoUbicacion('Ubicación ajustada manualmente en el mapa.');
+        }}
+      />
+      <p className="map-hint">Toca el mapa para ajustar la ubicación de búsqueda.</p>
 
       <div className="clinic-list">
         <div className="clinic-list-header">

@@ -215,3 +215,9 @@
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
+
+.map-hint {
+  margin: 6px 0 14px;
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+}

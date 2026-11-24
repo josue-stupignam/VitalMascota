@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import '../../styles/map.css';
@@ -39,10 +39,27 @@ function MapController({ userPosition }) {
     }
   }, [map, userPosition]);
 
+  useEffect(() => {
+    const alRedimensionar = () => map.invalidateSize();
+    window.addEventListener('resize', alRedimensionar);
+    return () => window.removeEventListener('resize', alRedimensionar);
+  }, [map]);
+
   return null;
 }
 
-export default function MapWidget({ userPosition, clinicas = [] }) {
+function MapClickHandler({ onPickLocation }) {
+  useMapEvents({
+    click(evento) {
+      if (onPickLocation) {
+        onPickLocation({ lat: evento.latlng.lat, lng: evento.latlng.lng });
+      }
+    },
+  });
+  return null;
+}
+
+export default function MapWidget({ userPosition, clinicas = [], onPickLocation }) {
   if (!userPosition || !userPosition[0] || !userPosition[1]) return null;
 
   return (
@@ -59,6 +76,7 @@ export default function MapWidget({ userPosition, clinicas = [] }) {
         />
 
         <MapController userPosition={userPosition} />
+        <MapClickHandler onPickLocation={onPickLocation} />
 
         <Marker position={userPosition} icon={userIcon}>
           <Popup>Tu ubicación actual</Popup>
