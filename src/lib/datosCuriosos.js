@@ -77,7 +77,7 @@ const DATOS = {
   },
   reptil: {
     pequena: [
-      'Los reptiles pequeños dependen del gradiente de temperatura: ofrece zona cálida y zona fresca.',
+      'Los reptiles pequeños dependen del cambio de temperatura: ofrece zona cálida y zona fresca.',
       'La humedad adecuada evita problemas de muda en serpientes y geckos pequeños.',
       'Manipúlalos poco y con manos limpias: el estrés afecta su apetito.',
     ],

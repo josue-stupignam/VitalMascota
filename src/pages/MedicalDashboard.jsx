@@ -209,13 +209,6 @@ export default function MedicalDashboard() {
         rows="3"
         value={formData.descripcion}
         onChange={set('descripcion')}
-        placeholder={
-          activeTab === 'vacunas'
-            ? 'Ej. Refuerzo anual aplicado en la pata trasera derecha, sin reacción adversa.'
-            : activeTab === 'alergias'
-            ? 'Ej. Estornudos y picazón tras comer pollo; suspendido desde marzo.'
-            : 'Ej. Esterilización con recuperación completa en 10 días.'
-        }
       />
       <span className="field-hint">Opcional: agrega síntomas, causa o cualquier detalle útil.</span>
     </div>
@@ -447,7 +440,6 @@ export default function MedicalDashboard() {
                 className="input-field"
                 value={contacto.veterinario}
                 onChange={(e) => setContacto((p) => ({ ...p, veterinario: e.target.value }))}
-                placeholder="Ej. Dra. Laura Méndez"
               />
             </div>
             <div className="input-group">
@@ -460,7 +452,6 @@ export default function MedicalDashboard() {
                 className="input-field"
                 value={contacto.clinica}
                 onChange={(e) => setContacto((p) => ({ ...p, clinica: e.target.value }))}
-                placeholder="Ej. Hospital Veterinario del Valle"
               />
             </div>
             <div className="input-group">
@@ -474,7 +465,6 @@ export default function MedicalDashboard() {
                 className="input-field"
                 value={contacto.telefono}
                 onChange={(e) => setContacto((p) => ({ ...p, telefono: e.target.value }))}
-                placeholder="Ej. +52 55 1234 5678"
               />
             </div>
             <div className="input-group">
@@ -537,13 +527,6 @@ export default function MedicalDashboard() {
                 required
                 value={formData.nombre}
                 onChange={set('nombre')}
-                placeholder={`Ej. ${
-                  activeTab === 'vacunas'
-                    ? 'Rabia'
-                    : activeTab === 'alergias'
-                    ? 'Pollo'
-                    : 'Esterilización'
-                }`}
               />
             </div>
           )}
@@ -589,7 +572,6 @@ export default function MedicalDashboard() {
                 rows="3"
                 value={formData.nota}
                 onChange={set('nota')}
-                placeholder="Ej. Durmió más de lo normal y rechazó el desayuno."
               />
             </div>
           )}

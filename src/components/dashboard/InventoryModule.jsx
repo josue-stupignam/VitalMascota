@@ -201,7 +201,6 @@ export default function InventoryModule() {
               id="inv-nombre"
               type="text"
               className="input-field"
-              placeholder="Ej. Croquetas Royal Canin"
               value={nombre}
               onChange={(e) => setNombre(e.target.value)}
               required
@@ -221,7 +220,6 @@ export default function InventoryModule() {
                   step="0.1"
                   min="0"
                   className="input-field"
-                  placeholder="Ej. 3"
                   value={cantidadKg}
                   onChange={(e) => setCantidadKg(e.target.value)}
                   required
@@ -276,7 +274,6 @@ export default function InventoryModule() {
                     step="0.1"
                     min="0"
                     className="input-field"
-                    placeholder="Ej. 12"
                     value={cantidadOtro}
                     onChange={(e) => setCantidadOtro(e.target.value)}
                     required
@@ -310,7 +307,6 @@ export default function InventoryModule() {
                   step="0.1"
                   min="0"
                   className="input-field"
-                  placeholder="Ej. 1"
                   value={consumoOtro}
                   onChange={(e) => setConsumoOtro(e.target.value)}
                   required

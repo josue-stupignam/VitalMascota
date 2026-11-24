@@ -110,7 +110,6 @@ export default function MissingPetPoster({ pet, isOpen, onClose }) {
               id="cartel-telefono"
               type="tel"
               className="input-field"
-              placeholder="Ej. +52 55 1234 5678"
               value={telefono}
               onChange={(e) => setTelefono(e.target.value)}
             />
@@ -123,7 +122,6 @@ export default function MissingPetPoster({ pet, isOpen, onClose }) {
               id="cartel-recompensa"
               type="text"
               className="input-field"
-              placeholder="Ej. $2,000 MXN"
               value={recompensa}
               onChange={(e) => setRecompensa(e.target.value)}
             />
@@ -138,7 +136,6 @@ export default function MissingPetPoster({ pet, isOpen, onClose }) {
             id="cartel-lugar"
             type="text"
             className="input-field"
-            placeholder="Ej. Parque México, Condesa"
             value={lugarExtravio}
             onChange={(e) => setLugarExtravio(e.target.value)}
           />
@@ -152,7 +149,6 @@ export default function MissingPetPoster({ pet, isOpen, onClose }) {
             id="cartel-referencias"
             className="input-field cartel-textarea"
             rows="2"
-            placeholder="Ej. Entre Calle 5 y Av. Central, cerca de la tienda de la esquina."
             value={referencias}
             onChange={(e) => setReferencias(e.target.value)}
           />
@@ -166,7 +162,6 @@ export default function MissingPetPoster({ pet, isOpen, onClose }) {
             id="cartel-senas"
             type="text"
             className="input-field"
-            placeholder="Ej. Mancha blanca en pecho, collar rojo"
             value={detalles}
             onChange={(e) => setDetalles(e.target.value)}
           />

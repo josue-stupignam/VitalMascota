@@ -125,7 +125,6 @@ export default function AuthView() {
               id="auth-nombre"
               type="text"
               className="input-field"
-              placeholder="Ej. Ana López"
               value={nombre}
               onChange={(e) => setNombre(e.target.value)}
               required
@@ -142,7 +141,6 @@ export default function AuthView() {
             id="auth-email"
             type="email"
             className="input-field"
-            placeholder="ejemplo@correo.com"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required

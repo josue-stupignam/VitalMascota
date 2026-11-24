@@ -187,7 +187,6 @@ export default function OnboardingWizard({ onClose }) {
                 id="pet-nombre"
                 type="text"
                 className="input-field"
-                placeholder="Ej. Luna, Max, Firulais"
                 value={nombre}
                 onChange={(e) => setNombre(e.target.value)}
                 required
@@ -202,7 +201,6 @@ export default function OnboardingWizard({ onClose }) {
                 id="pet-raza"
                 type="text"
                 className="input-field"
-                placeholder="Ej. Golden Retriever, Mestizo"
                 value={raza}
                 onChange={(e) => setRaza(e.target.value)}
               />
@@ -217,7 +215,6 @@ export default function OnboardingWizard({ onClose }) {
                   id="pet-edad"
                   type="text"
                   className="input-field"
-                  placeholder="Ej. 2 años"
                   value={edad}
                   onChange={(e) => setEdad(e.target.value)}
                 />
@@ -233,7 +230,6 @@ export default function OnboardingWizard({ onClose }) {
                   step="0.1"
                   min="0"
                   className="input-field"
-                  placeholder="Ej. 12.5"
                   value={peso}
                   onChange={(e) => setPeso(e.target.value)}
                 />

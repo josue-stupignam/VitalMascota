@@ -151,7 +151,6 @@ export default function TaskList() {
               id="task-desc"
               type="text"
               className="input-field"
-              placeholder="Ej. Dar pastilla para el corazón"
               value={nuevaTarea}
               onChange={(e) => setNuevaTarea(e.target.value)}
               required
