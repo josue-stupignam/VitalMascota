@@ -1,8 +1,9 @@
 import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
 import { useAuth } from './AuthContext';
+import { useUser } from './UserContext';
 import { db } from '../firebaseConfig';
 import { collection, query, where, onSnapshot, doc, addDoc, updateDoc, deleteDoc } from 'firebase/firestore';
-import { clinicasCercanas, familia } from '../data/mockData';
+import { clinicasCercanas } from '../data/mockData';
 import CryptoJS from 'crypto-js';
 import { CRYPTO_SECRET } from '../lib/cryptoSecret';
 import { TALLAS } from '../lib/pets';
@@ -30,7 +31,10 @@ const PetContext = createContext();
 
 export function PetProvider({ children }) {
   const { user } = useAuth();
-  
+  const { profile } = useUser();
+  const familiaEfectiva =
+    profile?.familyId && user && profile.familyId !== user.uid ? profile.familyId : null;
+
   // Caché en memoria / almacenamiento local para evitar pantallas en blanco durante la conexión inicial
   const getInitialCache = () => {
     if (!user) return [];
@@ -61,52 +65,90 @@ export function PetProvider({ children }) {
         setPetsLoading(false);
       }
 
-      const q = query(collection(db, 'pets'), where('userId', '==', user.uid));
-      
-      const unsubscribe = onSnapshot(q, (snapshot) => {
-        const petsData = snapshot.docs.map(doc => {
-          const data = doc.data();
+      const mapear = (snapshot) =>
+        snapshot.docs.map((documento) => {
+          const data = documento.data();
           const medicoDescifrado = data.medico
-            ? (typeof data.medico === 'string' ? decryptData(data.medico) : data.medico)
+            ? typeof data.medico === 'string'
+              ? decryptData(data.medico)
+              : data.medico
             : {};
           return {
-            id: doc.id,
+            id: documento.id,
             ...data,
-            // Descifrar historial médico confidencial
             medico: medicoDescifrado || {},
-            medicoError: Boolean(data.medico) && medicoDescifrado === null
+            medicoError: Boolean(data.medico) && medicoDescifrado === null,
           };
         });
-        
+
+      let propios = [];
+      let compartidos = [];
+      let primerEvento = true;
+
+      const emitir = () => {
+        const mapa = new Map();
+        [...propios, ...compartidos].forEach((pet) => mapa.set(pet.id, pet));
+        const petsData = [...mapa.values()];
+
         setPets(petsData);
-        // Guardar en caché local
         try {
           localStorage.setItem(`vitalmascota_pets_cache_${user.uid}`, JSON.stringify(petsData));
         } catch (e) {
           // Si el storage está lleno o restringido
         }
-        
-        if (petsData.length > 0) {
-          if (!petsData.find(p => p.id === activePetId)) {
-            setActivePetId(petsData[0].id);
-          }
-        } else {
-          setActivePetId(null);
-        }
-        
-        setPetsLoading(false);
-      }, (error) => {
-        console.error("Error obteniendo mascotas:", error);
-        setPetsLoading(false);
-      });
 
-      return () => unsubscribe();
+        setActivePetId((prev) => {
+          if (petsData.length === 0) return null;
+          return petsData.some((pet) => pet.id === prev) ? prev : petsData[0].id;
+        });
+
+        if (primerEvento) {
+          primerEvento = false;
+          setPetsLoading(false);
+        }
+      };
+
+      const alFallar = (error) => {
+        console.error('Error obteniendo mascotas:', error);
+        setPetsLoading(false);
+      };
+
+      const qPropios = query(collection(db, 'pets'), where('userId', '==', user.uid));
+      const unsubscribePropios = onSnapshot(
+        qPropios,
+        (snapshot) => {
+          propios = mapear(snapshot);
+          emitir();
+        },
+        alFallar
+      );
+
+      let unsubscribeFamilia = () => {};
+      if (familiaEfectiva) {
+        const qFamilia = query(
+          collection(db, 'pets'),
+          where('familyId', '==', familiaEfectiva)
+        );
+        unsubscribeFamilia = onSnapshot(
+          qFamilia,
+          (snapshot) => {
+            compartidos = mapear(snapshot);
+            emitir();
+          },
+          alFallar
+        );
+      }
+
+      return () => {
+        unsubscribePropios();
+        unsubscribeFamilia();
+      };
     } else {
       setPets([]);
       setActivePetId(null);
       setPetsLoading(false);
     }
-  }, [user]);
+  }, [user, familiaEfectiva]);
 
   // ── Funciones de Mutación (Firestore) ────────────────────────────────
   const addPet = useCallback(async (petData) => {
@@ -121,6 +163,7 @@ export function PetProvider({ children }) {
     const newPetData = {
       ...petData,
       userId: user.uid,
+      familyId: familiaEfectiva || user.uid,
       estado: 'saludable',
       eventos: [],
       inventario: [], // Para InventoryModule
@@ -138,7 +181,7 @@ export function PetProvider({ children }) {
         'No se pudo guardar la mascota. Revisa tu conexión e inténtalo de nuevo (si la foto es muy grande, quítala).'
       );
     }
-  }, [user]);
+  }, [user, familiaEfectiva]);
 
   const removePet = useCallback(async (id) => {
     try {
@@ -285,7 +328,6 @@ export function PetProvider({ children }) {
         microchip: activePet.microchip || '',
         avatar_url: activePet.avatar_url || activePet.foto || '',
         estado: activePet.estado,
-        familia,
       }
     : null;
 
@@ -315,7 +357,6 @@ export function PetProvider({ children }) {
     toggleTarea,
     medico,
     clinicas: clinicasCercanas,
-    familia,
     TALLAS,
     updatePet,
     hoyLocal,

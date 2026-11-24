@@ -194,3 +194,150 @@
   opacity: 0.6;
   cursor: not-allowed;
 }
+
+/* ─── Familia ───────────────────────────────────────────────────────────── */
+.profile-family {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.profile-family-btn {
+  align-self: flex-start;
+}
+
+.family-join {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 12px;
+  border-top: 1px solid var(--color-border);
+}
+
+.family-code-input {
+  text-transform: uppercase;
+  letter-spacing: 0.25em;
+  font-weight: 700;
+  max-width: 220px;
+}
+
+.family-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.family-count {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--color-text-secondary);
+}
+
+.family-role-badge {
+  padding: 2px 10px;
+  border-radius: 12px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+}
+
+.family-members {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+}
+
+.family-member {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  background: var(--color-surface-2);
+}
+
+.family-member-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 140px;
+}
+
+.family-member-name {
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.family-member-email {
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+  word-break: break-all;
+}
+
+.family-member-role {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.family-remove {
+  padding: 6px 10px;
+  font-size: 0.78rem;
+}
+
+.family-code-box {
+  padding: 12px;
+  border: 1px dashed var(--color-border);
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.family-code-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.family-code {
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  font-size: 1.1rem;
+  font-weight: 800;
+  letter-spacing: 0.22em;
+}
+
+.family-leave {
+  align-self: flex-start;
+  color: var(--color-danger);
+  border-color: var(--color-danger);
+}
+
+@media (max-width: 480px) {
+  .family-member {
+    align-items: flex-start;
+  }
+
+  .family-code-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .family-code {
+    text-align: center;
+  }
+}

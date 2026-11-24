@@ -4,13 +4,15 @@ import { CheckSquare, Plus, Trash2, UserRound } from 'lucide-react';
 import { db } from '../../firebaseConfig';
 import { usePet } from '../../context/PetContext';
 import { useUser } from '../../context/UserContext';
+import { useFamily } from '../../context/FamilyContext';
 import Modal from '../ui/Modal';
 import { iconoTarea } from '../../lib/tareaIconos';
 import { vibrate, vibrateSuccess } from '../../lib/haptics';
 import '../../styles/global.css';
 
 export default function TaskList() {
-  const { tareas, toggleTarea, activePet, familia, hoyLocal } = usePet();
+  const { tareas, toggleTarea, activePet, hoyLocal } = usePet();
+  const { members } = useFamily();
   const { profile } = useUser();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [nuevaTarea, setNuevaTarea] = useState('');
@@ -23,10 +25,15 @@ export default function TaskList() {
   const completedCount = tareasList.filter(estaCompletada).length;
   const progressPercent = tareasList.length > 0 ? (completedCount / tareasList.length) * 100 : 0;
 
-  const responsables = [
-    ...(profile?.nombre ? [{ id: profile.familyId || 'owner', nombre: profile.nombre }] : []),
-    ...(familia || []).filter((f) => f.nombre !== profile?.nombre),
-  ];
+  const responsables =
+    members.length > 0
+      ? members.map((miembro) => ({
+          id: miembro.uid,
+          nombre: miembro.name || miembro.email || 'Integrante',
+        }))
+      : profile?.nombre
+      ? [{ id: 'yo', nombre: profile.nombre }]
+      : [];
 
   useEffect(() => {
     if (!isModalOpen) {

@@ -20,6 +20,7 @@ import { useUser } from '../context/UserContext';
 import { usePet } from '../context/PetContext';
 import useTheme from '../hooks/useTheme';
 import ThemeToggle from '../components/ui/ThemeToggle';
+import FamilySection from '../components/profile/FamilySection';
 import '../styles/profile.css';
 
 const TELEFONO_VALIDO = /^[0-9+\s-]{7,15}$/;
@@ -184,6 +185,8 @@ export default function Profile() {
           {guardando ? 'Guardando…' : 'Guardar cambios'}
         </button>
       </form>
+
+      <FamilySection />
 
       <section className="card profile-theme">
         <h3 className="card-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>

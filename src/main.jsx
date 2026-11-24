@@ -7,6 +7,7 @@ import { firebaseConfigError, firebaseConfigFaltantes } from './firebaseConfig';
 import { AuthProvider } from './context/AuthContext';
 import { PetProvider } from './context/PetContext';
 import { UserProvider } from './context/UserContext';
+import { FamilyProvider } from './context/FamilyContext';
 import './styles/global.css';
 
 const raiz = document.getElementById('root');
@@ -21,10 +22,12 @@ if (firebaseConfigError) {
       <BrowserRouter>
         <AuthProvider>
           <UserProvider>
+          <FamilyProvider>
             <PetProvider>
               <App />
             </PetProvider>
-          </UserProvider>
+          </FamilyProvider>
+        </UserProvider>
         </AuthProvider>
       </BrowserRouter>
     </React.StrictMode>

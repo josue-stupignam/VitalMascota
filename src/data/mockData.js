@@ -1,12 +1,6 @@
 // ─── Datos de referencia (sin mascotas precargadas) ───────────────────────
 // Las mascotas se crean desde el Wizard y se persisten por usuario en localStorage.
 
-export const familia = [
-  { id: 'f1', nombre: 'Carlos', rol: 'Dueño principal' },
-  { id: 'f2', nombre: 'María', rol: 'Co-dueña' },
-  { id: 'f3', nombre: 'Sofía', rol: 'Hija' },
-];
-
 export const clinicasCercanas = [
   {
     id: 'c1',
