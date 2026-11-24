@@ -1,62 +1,73 @@
 import React, { useEffect, useState } from 'react';
-import { Link, useParams, useSearchParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import { doc, getDoc } from 'firebase/firestore';
-import {
-  ArrowLeft,
-  Clock,
-  Eye,
-  Phone,
-  Stethoscope,
-  Utensils,
-} from 'lucide-react';
+import { ArrowLeft, Clock, Eye, Phone, Stethoscope, Utensils } from 'lucide-react';
 import { db } from '../firebaseConfig';
-import { accesoValido, horasRestantes } from '../lib/accesos';
 import { getEspecieIcono } from '../lib/especies';
-import { getPorcionDiaria, getTalla } from '../lib/pets';
+import { getTalla } from '../lib/pets';
 import { iconoTarea } from '../lib/tareaIconos';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
 import '../styles/global.css';
 
+function horasRestantesISO(expiresAt) {
+  const ms = new Date(expiresAt).getTime() - Date.now();
+  if (!Number.isFinite(ms) || ms <= 0) return 0;
+  return Math.ceil(ms / (60 * 60 * 1000));
+}
+
 export default function SitterView() {
-  const { petId } = useParams();
-  const [searchParams] = useSearchParams();
-  const token = searchParams.get('token');
-  const [pet, setPet] = useState(null);
-  const [acceso, setAcceso] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const { token } = useParams();
+  const [enlace, setEnlace] = useState(null);
+  const [estado, setEstado] = useState('cargando');
 
   useEffect(() => {
-    const fetchPetData = async () => {
+    let activo = true;
+
+    const cargar = async () => {
+      if (!token) {
+        setEstado('invalido');
+        return;
+      }
       try {
-        const petDoc = await getDoc(doc(db, 'pets', petId));
-        if (petDoc.exists()) {
-          const raw = petDoc.data();
-          // El cuidador solo ve rutinas y teléfonos: no desciframos el expediente clínico.
-          setPet({ ...raw, id: petDoc.id });
-          if (accesoValido(raw.accesos, token, 'cuidador')) {
-            setAcceso((raw.accesos || []).find((a) => a.token === token));
-          }
+        const snapshot = await getDoc(doc(db, 'sitterLinks', token));
+        if (!activo) return;
+
+        if (!snapshot.exists()) {
+          setEstado('invalido');
+          return;
         }
+
+        const datos = snapshot.data();
+        if (!datos.expiresAt || new Date(datos.expiresAt).getTime() <= Date.now()) {
+          setEnlace(datos);
+          setEstado('expirado');
+          return;
+        }
+
+        setEnlace(datos);
+        setEstado('ok');
       } catch (err) {
-        console.error('Error cargando información para el cuidador:', err);
-      } finally {
-        setLoading(false);
+        console.error('Error cargando el enlace de cuidador:', err);
+        if (activo) setEstado('invalido');
       }
     };
 
-    fetchPetData();
-  }, [petId, token]);
+    cargar();
+    return () => {
+      activo = false;
+    };
+  }, [token]);
 
-  if (loading) return <LoadingSpinner message="Cargando perfil para cuidador..." />;
+  if (estado === 'cargando') return <LoadingSpinner message="Cargando perfil para cuidador..." />;
 
-  if (!pet || !acceso) {
+  if (estado !== 'ok') {
     return (
       <main className="page not-found">
         <Clock size={48} className="not-found-icon" />
-        <h1>Enlace expirado o revocado</h1>
+        <h1>{estado === 'expirado' ? 'Enlace expirado' : 'Enlace no válido'}</h1>
         <p>
-          Este acceso temporal de cuidador caducó o fue revocado por el dueño. Solicita un nuevo
-          enlace de 48 horas.
+          Este acceso temporal de cuidador {estado === 'expirado' ? 'caducó' : 'no existe o fue revocado'}.
+          Solicita al dueño un nuevo enlace de 48 horas.
         </p>
         <Link to="/login" className="btn btn-primary">
           <ArrowLeft size={16} /> Volver
@@ -65,38 +76,37 @@ export default function SitterView() {
     );
   }
 
-  const { tareas = [] } = pet;
-  const contacto = acceso.contacto || {};
-  const Icono = getEspecieIcono(pet.especie);
-  const talla = getTalla(pet.talla);
-  const alimento = (pet.inventario || []).find(
-    (item) => item.tipo === 'alimento' && item.porcionDiaria
-  );
-  const porcion = alimento?.porcionDiaria || getPorcionDiaria(pet.talla);
+  const tareas = enlace.tareas || [];
+  const contacto = enlace.contacto || {};
+  const Icono = getEspecieIcono(enlace.especie);
+  const talla = getTalla(enlace.talla);
+  const porcion = enlace.racion;
   const tareasComida = tareas.filter((t) =>
     /comer|aliment|comida|agua|porcion|porción/i.test(t.tarea || '')
   );
   const otrasTareas = tareas.filter((t) => !tareasComida.includes(t));
+  const foto = enlace.petFoto;
 
   return (
     <main className="page">
       <div className="sitter-banner">
-        <Eye size={16} /> Modo cuidador · solo lectura · {horasRestantes(acceso.expira)} h restantes
+        <Eye size={16} /> Modo cuidador · solo lectura ·{' '}
+        {horasRestantesISO(enlace.expiresAt)} h restantes
       </div>
 
       <div className="card pet-status-card">
         <div className="pet-status-header">
-          {pet.avatar_url || pet.foto ? (
-            <img src={pet.avatar_url || pet.foto} alt={pet.nombre} className="pet-avatar" />
+          {foto ? (
+            <img src={foto} alt={enlace.petNombre} className="pet-avatar" />
           ) : (
             <div className="pet-avatar pet-avatar-icon">
               <Icono size={34} />
             </div>
           )}
           <div className="pet-status-info">
-            <h2 className="pet-name">{pet.nombre}</h2>
+            <h2 className="pet-name">{enlace.petNombre}</h2>
             <p className="pet-detail">
-              {pet.raza || pet.especie} • {pet.edad || 'Edad N/A'}
+              {enlace.raza || enlace.especie} • {enlace.edad || 'Edad no registrada'}
             </p>
             <div className="pet-badges">
               <span className="talla-badge">{talla.label}</span>
@@ -113,9 +123,7 @@ export default function SitterView() {
         <div className="feeding-summary">
           <span className="feeding-portion">{porcion} g</span>
           <span className="feeding-label">
-            {alimento
-              ? `ración diaria indicada por el dueño (${alimento.nombre})`
-              : `ración diaria recomendada para talla ${talla.label}`}
+            {enlace.racionNota || `ración diaria recomendada para talla ${talla.label}`}
           </span>
         </div>
         {tareasComida.length > 0 ? (
@@ -128,9 +136,6 @@ export default function SitterView() {
                     <TareaIcono size={17} />
                   </span>
                   <span className="task-name">{t.tarea}</span>
-                  <span className={`task-state ${t.completada ? 'done' : ''}`}>
-                    {t.completada ? 'Completada' : 'Pendiente'}
-                  </span>
                 </li>
               );
             })}
@@ -165,17 +170,32 @@ export default function SitterView() {
           <Stethoscope size={18} /> Teléfonos de emergencia
         </h3>
         {contacto.veterinario && (
-          <p><strong>Veterinario:</strong> {contacto.veterinario}</p>
+          <p>
+            <strong>Veterinario:</strong> {contacto.veterinario}
+          </p>
         )}
-        {contacto.clinica && <p><strong>Clínica:</strong> {contacto.clinica}</p>}
+        {contacto.clinica && (
+          <p>
+            <strong>Clínica:</strong> {contacto.clinica}
+          </p>
+        )}
         {contacto.telefono ? (
           <p>
-            <strong>Teléfono:</strong>{' '}
+            <strong>Veterinaria:</strong>{' '}
             <a href={`tel:${contacto.telefono}`} className="link-phone">
               <Phone size={14} /> {contacto.telefono}
             </a>
           </p>
-        ) : (
+        ) : null}
+        {contacto.telefonoDueno ? (
+          <p>
+            <strong>Dueño:</strong>{' '}
+            <a href={`tel:${contacto.telefonoDueno}`} className="link-phone">
+              <Phone size={14} /> {contacto.telefonoDueno}
+            </a>
+          </p>
+        ) : null}
+        {!contacto.telefono && !contacto.telefonoDueno && (
           <p className="empty-state">
             El dueño aún no registró un teléfono de emergencia para este enlace.
           </p>

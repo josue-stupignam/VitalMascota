@@ -38,7 +38,7 @@ export default function App() {
 
         {/* Rutas públicas de emergencia y cuidador (no requieren login) */}
         <Route path="/emergencia/:petId" element={<PublicEmergencyProfile />} />
-        <Route path="/cuidador/:petId" element={<SitterView />} />
+        <Route path="/sitter/:token" element={<SitterView />} />
 
         {/* Rutas protegidas (requieren login, validado por ProtectedRoute) */}
         <Route

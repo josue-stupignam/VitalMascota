@@ -41,6 +41,6 @@ export function urlEmergencia(petId, token) {
   return `${window.location.origin}/emergencia/${petId}?token=${token}`;
 }
 
-export function urlCuidador(petId, token) {
-  return `${window.location.origin}/cuidador/${petId}?token=${token}`;
+export function urlCuidador(token) {
+  return `${window.location.origin}/sitter/${token}`;
 }
