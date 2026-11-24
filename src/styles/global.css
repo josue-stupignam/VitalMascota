@@ -1300,12 +1300,7 @@ body {
   color: var(--color-danger);
 }
 
-.emergency-tags {
-  margin: 10px 0 0;
-  font-size: 0.78rem;
-  font-weight: 700;
-  color: rgba(255, 255, 255, 0.88);
-}
+
 
 .link-phone {
   display: inline-flex;

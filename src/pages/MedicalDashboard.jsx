@@ -1,16 +1,14 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
-  AlertTriangle,
   Activity,
+  CalendarDays,
   ClipboardList,
   FileDown,
   Phone,
   Plus,
   Scale,
-  Scissors,
   ShieldAlert,
   Stethoscope,
-  Syringe,
 } from 'lucide-react';
 import PageHeader from '../components/layout/PageHeader';
 import Modal from '../components/ui/Modal';
@@ -18,55 +16,44 @@ import QREmergencyModal from '../components/medical/QREmergencyModal';
 import WeightChart from '../components/medical/WeightChart';
 import { usePet } from '../context/PetContext';
 import {
-  etiquetaVacuna,
-  estadoVacuna,
-  normalizarAlergia,
+  CATEGORIAS_REGISTRO,
+  ESTADOS_REGISTRO,
+  normalizarRegistros,
   pesoFueraDeRango,
-  resumenSalud,
+  registrosPendientes,
 } from '../lib/medico';
 import { getTalla } from '../lib/pets';
+import { getTodayLocalDate } from '../lib/fechas';
 import { vibrateSuccess } from '../lib/haptics';
 import '../styles/medical-dashboard.css';
 
 const TABS = [
-  { key: 'vacunas', label: 'Vacunas', icon: Syringe },
-  { key: 'alergias', label: 'Alergias', icon: AlertTriangle },
-  { key: 'cirugias', label: 'Cirugías', icon: Scissors },
-  { key: 'bitacora', label: 'Bitácora', icon: ClipboardList },
+  { key: 'registros', label: 'Registros', icon: ClipboardList },
   { key: 'peso', label: 'Peso', icon: Scale },
   { key: 'contactos', label: 'Contactos', icon: Phone },
 ];
 
-const TITULOS_MODAL = {
-  vacunas: 'Añadir vacuna',
-  alergias: 'Añadir alergia',
-  cirugias: 'Añadir cirugía',
-  bitacora: 'Nueva entrada de bitácora',
-  peso: 'Registrar peso',
-  contactos: 'Editar contactos',
-};
-
-const ETIQUETAS_RESCATE = [
-  'En tratamiento',
-  'Listo para adopción',
-  'Mascota de apoyo',
-];
-
-const formVacio = () => ({
+const formRegistroVacio = () => ({
   nombre: '',
-  fecha: '',
-  vigente: true,
-  descripcion: '',
-  nota: '',
+  categoria: 'Vacuna',
+  estado: 'Aplicada',
+  fecha: getTodayLocalDate(),
+  detalles: '',
+});
+
+const formPesoVacio = () => ({
+  fecha: getTodayLocalDate(),
   peso: '',
 });
 
 export default function MedicalDashboard() {
-  const { activePet, updateActivePetMedico, updatePet } = usePet();
-  const [activeTab, setActiveTab] = useState('vacunas');
+  const { activePet, activePetId, pets, setActivePet, updateActivePetMedico } = usePet();
+  const [activeTab, setActiveTab] = useState('registros');
+  const [filtro, setFiltro] = useState('Todas');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isQrModalOpen, setIsQrModalOpen] = useState(false);
-  const [formData, setFormData] = useState(formVacio());
+  const [formData, setFormData] = useState(formRegistroVacio());
+  const [pesoData, setPesoData] = useState(formPesoVacio());
   const [errorMsg, setErrorMsg] = useState('');
   const [contacto, setContacto] = useState({
     veterinario: '',
@@ -76,11 +63,12 @@ export default function MedicalDashboard() {
     microchip: '',
   });
 
-
   const medico = activePet?.medico || {};
-
-  const salud = useMemo(() => resumenSalud(medico), [medico]);
+  const registros = useMemo(() => normalizarRegistros(medico), [medico]);
+  const pendientes = useMemo(() => registrosPendientes(medico), [medico]);
   const talla = getTalla(activePet?.talla);
+  const hoy = getTodayLocalDate();
+
   useEffect(() => {
     setContacto({
       veterinario: medico.veterinario || '',
@@ -98,34 +86,97 @@ export default function MedicalDashboard() {
     medico.microchip,
   ]);
 
+  useEffect(() => {
+    setErrorMsg('');
+    setFiltro('Todas');
+  }, [activePetId]);
+
   const historialPeso = useMemo(() => medico.historialPeso || [], [medico]);
   const ultimoPeso = useMemo(() => {
     if (historialPeso.length === 0) return activePet?.peso;
     return historialPeso[historialPeso.length - 1].peso;
   }, [historialPeso, activePet]);
 
+  const registrosFiltrados = useMemo(() => {
+    const lista =
+      filtro === 'Todas' ? registros : registros.filter((r) => r.categoria === filtro);
+    return [...lista].sort((a, b) => String(b.fecha).localeCompare(String(a.fecha)));
+  }, [registros, filtro]);
+
+  const salud = useMemo(() => {
+    if (registros.length === 0) {
+      return { estado: 'sin-datos', mensaje: 'Aún no hay registros médicos' };
+    }
+    if (pendientes.length > 0) {
+      return {
+        estado: 'proximo',
+        mensaje: `${pendientes.length} ${
+          pendientes.length === 1 ? 'registro pendiente' : 'registros pendientes'
+        } de aplicar`,
+      };
+    }
+    return { estado: 'ok', mensaje: 'No hay registros pendientes de aplicar' };
+  }, [registros, pendientes]);
+
   if (!activePet) return null;
 
   const abrirModal = () => {
-    setFormData(formVacio());
+    setErrorMsg('');
+    setFormData(formRegistroVacio());
+    setPesoData(formPesoVacio());
     setIsModalOpen(true);
   };
 
   const cerrarModal = () => setIsModalOpen(false);
 
-  const set = (campo) => (e) =>
+  const setCampo = (campo) => (e) =>
     setFormData((prev) => ({
       ...prev,
       [campo]: e?.target ? e.target.value : e,
     }));
 
-  const handleSave = async (e) => {
+  const setPeso = (campo) => (e) =>
+    setPesoData((prev) => ({ ...prev, [campo]: e.target.value }));
+
+  const guardarRegistro = async (e) => {
     e.preventDefault();
-    const detalle = formData.descripcion.trim();
     setErrorMsg('');
 
+    if (!formData.nombre.trim()) {
+      setErrorMsg('El nombre del registro es obligatorio.');
+      return;
+    }
+    if (!CATEGORIAS_REGISTRO.includes(formData.categoria)) {
+      setErrorMsg('Selecciona una categoría válida.');
+      return;
+    }
+    if (!ESTADOS_REGISTRO.includes(formData.estado)) {
+      setErrorMsg('Selecciona un estado válido.');
+      return;
+    }
+    if (!formData.fecha) {
+      setErrorMsg('La fecha es obligatoria.');
+      return;
+    }
+    if (formData.estado === 'Aplicada' && formData.fecha > hoy) {
+      setErrorMsg('Un registro aplicado no puede tener una fecha futura.');
+      return;
+    }
+
+    const nuevoRegistro = {
+      id: `${Date.now()}`,
+      nombre: formData.nombre.trim(),
+      categoria: formData.categoria,
+      estado: formData.estado,
+      fecha: formData.fecha,
+      detalles: formData.detalles.trim(),
+    };
+
     try {
-      await guardarSegunPestana(detalle);
+      await updateActivePetMedico((prev) => ({
+        ...prev,
+        registros: [...normalizarRegistros(prev), nuevoRegistro],
+      }));
     } catch (error) {
       setErrorMsg(error?.message || 'No se pudo guardar. Inténtalo de nuevo.');
       return;
@@ -135,84 +186,56 @@ export default function MedicalDashboard() {
     setIsModalOpen(false);
   };
 
-  const guardarSegunPestana = (detalle) => {
-    if (activeTab === 'vacunas') {
-      return updateActivePetMedico((prev) => ({
-        ...prev,
-        vacunas: [
-          ...(prev.vacunas || []),
-          {
-            nombre: formData.nombre.trim(),
-            fecha: formData.fecha,
-            vigente: formData.vigente,
-            descripcion: detalle,
-          },
-        ],
-      }));
+  const guardarPeso = async (e) => {
+    e.preventDefault();
+    setErrorMsg('');
+    const peso = Number(pesoData.peso);
+
+    if (!pesoData.fecha) {
+      setErrorMsg('La fecha es obligatoria.');
+      return;
+    }
+    if (!Number.isFinite(peso) || peso <= 0) {
+      setErrorMsg('Ingresa un peso mayor a 0 kg.');
+      return;
     }
 
-    if (activeTab === 'alergias') {
-      return updateActivePetMedico((prev) => ({
-        ...prev,
-        alergias: [
-          ...(prev.alergias || []),
-          { nombre: formData.nombre.trim(), descripcion: detalle },
-        ],
-      }));
-    }
-
-    if (activeTab === 'cirugias') {
-      return updateActivePetMedico((prev) => ({
-        ...prev,
-        cirugias: [
-          ...(prev.cirugias || []),
-          {
-            nombre: formData.nombre.trim(),
-            fecha: formData.fecha,
-            descripcion: detalle,
-          },
-        ],
-      }));
-    }
-
-    if (activeTab === 'bitacora') {
-      return updateActivePetMedico((prev) => ({
-        ...prev,
-        bitacora: [
-          ...(prev.bitacora || []),
-          { id: Date.now().toString(), fecha: formData.fecha, nota: formData.nota.trim() },
-        ],
-      }));
-    }
-
-    if (activeTab === 'peso') {
-      return updateActivePetMedico((prev) => ({
+    try {
+      await updateActivePetMedico((prev) => ({
         ...prev,
         historialPeso: [
           ...(prev.historialPeso || []),
-          { fecha: formData.fecha, peso: Number(formData.peso) },
+          { fecha: pesoData.fecha, peso },
         ],
       }));
+    } catch (error) {
+      setErrorMsg(error?.message || 'No se pudo guardar. Inténtalo de nuevo.');
+      return;
     }
 
-    return Promise.resolve();
+    vibrateSuccess();
+    setIsModalOpen(false);
   };
 
-  const detalleForm = (
-    <div className="input-group">
-      <label className="input-label" htmlFor="med-detalle">
-        Detalles, síntomas o causa que lo provocó
-      </label>
-      <textarea
-        id="med-detalle"
-        className="input-field medical-textarea"
-        rows="3"
-        value={formData.descripcion}
-        onChange={set('descripcion')}
-      />
-      <span className="field-hint">Opcional: agrega síntomas, causa o cualquier detalle útil.</span>
-    </div>
-  );
+  const guardarContactos = async (e) => {
+    e.preventDefault();
+    setErrorMsg('');
+    try {
+      await updateActivePetMedico({
+        veterinario: contacto.veterinario.trim(),
+        clinica: contacto.clinica.trim(),
+        telefono: contacto.telefono.trim(),
+        proximaCita: contacto.proximaCita,
+        microchip: contacto.microchip.trim(),
+      });
+    } catch (error) {
+      setErrorMsg(error?.message || 'No se pudo guardar. Inténtalo de nuevo.');
+      return;
+    }
+    vibrateSuccess();
+  };
+
+  const tituloModal = activeTab === 'peso' ? 'Registrar peso' : 'Añadir registro médico';
 
   return (
     <main className="page medical-page">
@@ -233,48 +256,38 @@ export default function MedicalDashboard() {
           }
         />
 
+        <div className="medical-toolbar">
+          <label className="medical-pet-picker" htmlFor="med-mascota">
+            <span className="section-label">Mascota</span>
+            <select
+              id="med-mascota"
+              className="input-field"
+              value={activePetId || ''}
+              onChange={(e) => setActivePet(e.target.value)}
+            >
+              {pets.map((pet) => (
+                <option key={pet.id} value={pet.id}>
+                  {pet.nombre}
+                </option>
+              ))}
+            </select>
+          </label>
+          <button
+            type="button"
+            className="btn-emergency-transfer"
+            onClick={() => setIsQrModalOpen(true)}
+          >
+            <ShieldAlert size={18} /> Transferencia One-Click
+          </button>
+        </div>
+
         <div className={`health-banner health-${salud.estado}`}>
-          {salud.estado === 'critico' ? (
-            <ShieldAlert size={18} />
-          ) : salud.estado === 'proximo' ? (
-            <AlertTriangle size={18} />
+          {salud.estado === 'proximo' ? (
+            <CalendarDays size={18} />
           ) : (
             <Activity size={18} />
           )}
           <span>{salud.mensaje}</span>
-        </div>
-
-        <button
-          className="btn-emergency-transfer"
-          onClick={() => setIsQrModalOpen(true)}
-        >
-          <ShieldAlert size={18} /> Transferencia One-Click
-        </button>
-
-        <div className="rescuer-tags">
-          <span className="section-label">Etiquetas de rescate (opcional)</span>
-          <div className="rescuer-tag-row">
-            {ETIQUETAS_RESCATE.map((etiqueta) => {
-              const activa = (activePet.etiquetas || []).includes(etiqueta);
-              return (
-                <button
-                  key={etiqueta}
-                  type="button"
-                  className={`rescuer-tag ${activa ? 'active' : ''}`}
-                  aria-pressed={activa}
-                  onClick={() => {
-                    const actuales = activePet.etiquetas || [];
-                    const nuevas = activa
-                      ? actuales.filter((e) => e !== etiqueta)
-                      : [...actuales, etiqueta];
-                    updatePet({ etiquetas: nuevas });
-                  }}
-                >
-                  {etiqueta}
-                </button>
-              );
-            })}
-          </div>
         </div>
 
         <div className="tabs-container">
@@ -295,103 +308,64 @@ export default function MedicalDashboard() {
         <div className="print-only print-header">
           <h2>{activePet.nombre}</h2>
           <p>
-            {activePet.raza || activePet.especie} • {activePet.edad || 'Edad N/A'} • Talla{' '}
+            {activePet.raza || activePet.especie} • {activePet.edad || 'Edad no registrada'} • Talla{' '}
             {talla.label}
           </p>
         </div>
 
-        {activeTab === 'vacunas' && (
-          <div className="medical-list">
-            {(!medico.vacunas || medico.vacunas.length === 0) ? (
-              <p className="empty-state">No hay vacunas registradas.</p>
-            ) : (
-              medico.vacunas.map((v, i) => {
-                const estado = estadoVacuna(v);
-                return (
-                  <div key={i} className="medical-card">
-                    <div className="medical-info">
-                      <span className="medical-title">{v.nombre}</span>
-                      <span className="medical-date">{v.fecha || 'Sin fecha'}</span>
-                      {v.descripcion && <span className="medical-desc">{v.descripcion}</span>}
-                    </div>
-                    <span className={`status-pill light-${estado}`}>
-                      {etiquetaVacuna(estado)}
-                    </span>
-                  </div>
-                );
-              })
-            )}
-          </div>
-        )}
+        {activeTab === 'registros' && (
+          <>
+            <div className="record-filters no-print" role="group" aria-label="Filtrar por categoría">
+              {['Todas', ...CATEGORIAS_REGISTRO].map((categoria) => (
+                <button
+                  key={categoria}
+                  type="button"
+                  className={`record-chip ${filtro === categoria ? 'active' : ''}`}
+                  aria-pressed={filtro === categoria}
+                  onClick={() => setFiltro(categoria)}
+                >
+                  {categoria}
+                </button>
+              ))}
+            </div>
 
-        {activeTab === 'alergias' && (
-          <div className="medical-list">
-            {(!medico.alergias || medico.alergias.length === 0) ? (
-              <p className="empty-state">No hay alergias registradas.</p>
-            ) : (
-              medico.alergias.map((raw, i) => {
-                const alergia = normalizarAlergia(raw);
-                return (
-                  <div key={i} className="medical-card alert-card">
-                    <div className="medical-info">
-                      <span className="medical-title">{alergia.nombre}</span>
-                      {alergia.descripcion && (
-                        <span className="medical-desc">{alergia.descripcion}</span>
-                      )}
-                    </div>
-                    <span className="status-pill light-critico">Restricción</span>
-                  </div>
-                );
-              })
-            )}
-          </div>
-        )}
-
-        {activeTab === 'cirugias' && (
-          <div className="medical-list">
-            {(!medico.cirugias || medico.cirugias.length === 0) ? (
-              <p className="empty-state">No hay cirugías registradas.</p>
-            ) : (
-              medico.cirugias.map((c, i) => (
-                <div key={i} className="medical-card">
-                  <div className="medical-info">
-                    <span className="medical-title">{c.nombre}</span>
-                    <span className="medical-date">{c.fecha || 'Sin fecha'}</span>
-                    {c.descripcion && <span className="medical-desc">{c.descripcion}</span>}
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        )}
-
-        {activeTab === 'bitacora' && (
-          <div className="medical-list">
-            {(!medico.bitacora || medico.bitacora.length === 0) ? (
+            {registrosFiltrados.length === 0 ? (
               <p className="empty-state">
-                Sin registros de comportamiento. Anota síntomas o cambios de ánimo.
+                {filtro === 'Todas'
+                  ? 'Aún no hay registros médicos para esta mascota.'
+                  : `No hay registros en la categoría ${filtro}.`}
               </p>
             ) : (
-              [...medico.bitacora]
-                .sort((a, b) => String(b.fecha).localeCompare(String(a.fecha)))
-                .map((b) => (
-                  <div key={b.id} className="medical-card">
+              <div className="medical-list">
+                {registrosFiltrados.map((registro) => (
+                  <div key={registro.id} className="medical-card record-card">
                     <div className="medical-info">
-                      <span className="medical-date">{b.fecha}</span>
-                      <span className="medical-desc">{b.nota}</span>
+                      <div className="record-heading">
+                        <span className="medical-title">{registro.nombre}</span>
+                        <span className="record-category">{registro.categoria}</span>
+                      </div>
+                      <span className="medical-date">{registro.fecha || 'Sin fecha'}</span>
+                      {registro.detalles && (
+                        <span className="medical-desc">{registro.detalles}</span>
+                      )}
                     </div>
+                    <span
+                      className={`status-pill ${
+                        registro.estado === 'Aplicada' ? 'light-ok' : 'light-proximo'
+                      }`}
+                    >
+                      {registro.estado}
+                    </span>
                   </div>
-                ))
+                ))}
+              </div>
             )}
-          </div>
+          </>
         )}
 
         {activeTab === 'peso' && (
           <div className="weight-tab">
-            <WeightChart
-              historial={medico.historialPeso || []}
-              tallaKey={activePet.talla}
-            />
+            <WeightChart historial={medico.historialPeso || []} tallaKey={activePet.talla} />
             {pesoFueraDeRango(ultimoPeso, activePet.talla) === 'bajo' && (
               <p className="weight-warning">
                 El peso registrado está por debajo del rango saludable de la talla {talla.label}.
@@ -406,26 +380,7 @@ export default function MedicalDashboard() {
         )}
 
         {activeTab === 'contactos' && (
-          <form
-            className="medical-form contact-form no-print"
-            onSubmit={async (e) => {
-              e.preventDefault();
-              setErrorMsg('');
-              try {
-                await updateActivePetMedico({
-                  veterinario: contacto.veterinario.trim(),
-                  clinica: contacto.clinica.trim(),
-                  telefono: contacto.telefono.trim(),
-                  proximaCita: contacto.proximaCita,
-                  microchip: contacto.microchip.trim(),
-                });
-              } catch (error) {
-                setErrorMsg(error?.message || 'No se pudo guardar. Inténtalo de nuevo.');
-                return;
-              }
-              vibrateSuccess();
-            }}
-          >
+          <form className="medical-form contact-form no-print" onSubmit={guardarContactos}>
             <p className="field-hint">
               Estos datos aparecen en el QR de emergencia y en el enlace del cuidador.
             </p>
@@ -509,16 +464,53 @@ export default function MedicalDashboard() {
 
       {activeTab !== 'contactos' && (
         <button type="button" className="fab-button no-print" onClick={abrirModal}>
-          <Plus size={18} /> Añadir {TABS.find((t) => t.key === activeTab)?.label}
+          <Plus size={18} /> {activeTab === 'peso' ? 'Registrar peso' : 'Añadir registro'}
         </button>
       )}
 
-      <Modal isOpen={isModalOpen} onClose={cerrarModal} title={TITULOS_MODAL[activeTab]}>
-        <form onSubmit={handleSave} className="medical-form">
-          {activeTab !== 'bitacora' && activeTab !== 'peso' && (
+      <Modal isOpen={isModalOpen} onClose={cerrarModal} title={tituloModal}>
+        {activeTab === 'peso' ? (
+          <form onSubmit={guardarPeso} className="medical-form">
+            <div className="input-group">
+              <label className="input-label" htmlFor="med-peso-fecha">
+                Fecha *
+              </label>
+              <input
+                id="med-peso-fecha"
+                type="date"
+                className="input-field"
+                required
+                max={hoy}
+                value={pesoData.fecha}
+                onChange={setPeso('fecha')}
+              />
+            </div>
+            <div className="input-group">
+              <label className="input-label" htmlFor="med-peso">
+                Peso (kg) *
+              </label>
+              <input
+                id="med-peso"
+                type="number"
+                step="0.1"
+                min="0"
+                className="input-field"
+                required
+                value={pesoData.peso}
+                onChange={setPeso('peso')}
+                placeholder={`Rango saludable: ${talla.rango}`}
+              />
+            </div>
+            {errorMsg && <p className="form-error">{errorMsg}</p>}
+            <button type="submit" className="btn-submit-medical">
+              Guardar
+            </button>
+          </form>
+        ) : (
+          <form onSubmit={guardarRegistro} className="medical-form">
             <div className="input-group">
               <label className="input-label" htmlFor="med-nombre">
-                Nombre {activeTab === 'alergias' ? 'de la alergia' : ''} *
+                Nombre *
               </label>
               <input
                 id="med-nombre"
@@ -526,12 +518,50 @@ export default function MedicalDashboard() {
                 className="input-field"
                 required
                 value={formData.nombre}
-                onChange={set('nombre')}
+                onChange={setCampo('nombre')}
               />
             </div>
-          )}
 
-          {(activeTab === 'vacunas' || activeTab === 'cirugias' || activeTab === 'bitacora') && (
+            <div className="form-row">
+              <div className="input-group">
+                <label className="input-label" htmlFor="med-categoria">
+                  Categoría *
+                </label>
+                <select
+                  id="med-categoria"
+                  className="input-field"
+                  required
+                  value={formData.categoria}
+                  onChange={setCampo('categoria')}
+                >
+                  {CATEGORIAS_REGISTRO.map((categoria) => (
+                    <option key={categoria} value={categoria}>
+                      {categoria}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="input-group">
+                <label className="input-label" htmlFor="med-estado">
+                  Estado *
+                </label>
+                <select
+                  id="med-estado"
+                  className="input-field"
+                  required
+                  value={formData.estado}
+                  onChange={setCampo('estado')}
+                >
+                  {ESTADOS_REGISTRO.map((estado) => (
+                    <option key={estado} value={estado}>
+                      {estado}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
             <div className="input-group">
               <label className="input-label" htmlFor="med-fecha">
                 Fecha *
@@ -541,83 +571,37 @@ export default function MedicalDashboard() {
                 type="date"
                 className="input-field"
                 required
+                max={formData.estado === 'Aplicada' ? hoy : undefined}
                 value={formData.fecha}
-                onChange={set('fecha')}
+                onChange={setCampo('fecha')}
               />
+              <span className="field-hint">
+                {formData.estado === 'Aplicada'
+                  ? 'Para registros aplicados solo se permiten fechas de hoy o anteriores.'
+                  : 'Puedes registrar fechas pasadas o futuras para dosis pendientes.'}
+              </span>
             </div>
-          )}
 
-          {activeTab === 'vacunas' && (
-            <div className="input-group checkbox-group">
-              <label className="input-label" htmlFor="med-vigente">
-                <input
-                  id="med-vigente"
-                  type="checkbox"
-                  checked={formData.vigente}
-                  onChange={(e) => set('vigente')(e.target.checked)}
-                />{' '}
-                ¿Está vigente actualmente?
-              </label>
-            </div>
-          )}
-
-          {activeTab === 'bitacora' && (
             <div className="input-group">
-              <label className="input-label" htmlFor="med-nota">
-                Síntoma, conducta o nota del día
+              <label className="input-label" htmlFor="med-detalle">
+                Detalles
               </label>
               <textarea
-                id="med-nota"
+                id="med-detalle"
                 className="input-field medical-textarea"
                 rows="3"
-                value={formData.nota}
-                onChange={set('nota')}
+                value={formData.detalles}
+                onChange={setCampo('detalles')}
               />
             </div>
-          )}
 
-          {activeTab === 'peso' && (
-            <>
-              <div className="input-group">
-                <label className="input-label" htmlFor="med-peso-fecha">
-                  Fecha *
-                </label>
-                <input
-                  id="med-peso-fecha"
-                  type="date"
-                  className="input-field"
-                  required
-                  value={formData.fecha}
-                  onChange={set('fecha')}
-                />
-              </div>
-              <div className="input-group">
-                <label className="input-label" htmlFor="med-peso">
-                  Peso (kg) *
-                </label>
-                <input
-                  id="med-peso"
-                  type="number"
-                  step="0.1"
-                  min="0"
-                  className="input-field"
-                  required
-                  value={formData.peso}
-                  onChange={set('peso')}
-                  placeholder={`Rango saludable: ${talla.rango}`}
-                />
-              </div>
-            </>
-          )}
+            {errorMsg && <p className="form-error">{errorMsg}</p>}
 
-          {activeTab !== 'bitacora' && activeTab !== 'peso' && detalleForm}
-
-          {errorMsg && <p className="form-error">{errorMsg}</p>}
-
-          <button type="submit" className="btn-submit-medical">
-            Guardar
-          </button>
-        </form>
+            <button type="submit" className="btn-submit-medical">
+              Guardar
+            </button>
+          </form>
+        )}
       </Modal>
 
       <QREmergencyModal isOpen={isQrModalOpen} onClose={() => setIsQrModalOpen(false)} />

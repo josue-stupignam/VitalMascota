@@ -6,17 +6,16 @@ import {
   ArrowLeft,
   Clock,
   Phone,
+  ClipboardList,
   ShieldAlert,
   Stethoscope,
-  Syringe,
-  TriangleAlert,
 } from 'lucide-react';
 import { db } from '../firebaseConfig';
 import { CRYPTO_SECRET } from '../lib/cryptoSecret';
 import { accesoValido } from '../lib/accesos';
 import { getEspecieIcono } from '../lib/especies';
 import { getTalla } from '../lib/pets';
-import { normalizarAlergia } from '../lib/medico';
+import { normalizarRegistros } from '../lib/medico';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
 import WeightChart from '../components/medical/WeightChart';
 import '../styles/global.css';
@@ -89,6 +88,7 @@ export default function PublicEmergencyProfile() {
   const { medico = {} } = pet;
   const Icono = getEspecieIcono(pet.especie);
   const talla = getTalla(pet.talla);
+  const registros = normalizarRegistros(medico);
 
   return (
     <main className="page">
@@ -126,9 +126,6 @@ export default function PublicEmergencyProfile() {
             </div>
           </div>
         </div>
-        {pet.etiquetas?.length > 0 && (
-          <p className="emergency-tags">{pet.etiquetas.join(' • ')}</p>
-        )}
       </div>
 
       <div className="card">
@@ -150,61 +147,33 @@ export default function PublicEmergencyProfile() {
         )}
       </div>
 
-      {medico.alergias?.length > 0 && (
-        <div className="card alert-card">
+      {registros.length > 0 && (
+        <div className="card">
           <h3 className="card-title">
-            <TriangleAlert size={18} /> Alergias y restricciones
+            <ClipboardList size={18} /> Registros médicos
           </h3>
           <ul className="allergy-list">
-            {medico.alergias.map((raw, i) => {
-              const alergia = normalizarAlergia(raw);
-              return (
-                <li key={i} className="allergy-item">
-                  <span className="allergy-tag">
-                    <TriangleAlert size={13} /> {alergia.nombre}
+            {[...registros]
+              .sort((a, b) => String(b.fecha).localeCompare(String(a.fecha)))
+              .map((registro) => (
+                <li key={registro.id} className="allergy-item">
+                  <strong>
+                    {registro.nombre}
+                    {registro.fecha ? ` (${registro.fecha})` : ''}
+                  </strong>
+                  <span className="record-category">{registro.categoria}</span>
+                  <span
+                    className={`status-pill ${
+                      registro.estado === 'Aplicada' ? 'light-ok' : 'light-proximo'
+                    }`}
+                  >
+                    {registro.estado}
                   </span>
-                  {alergia.descripcion && (
-                    <span className="medical-desc">{alergia.descripcion}</span>
+                  {registro.detalles && (
+                    <span className="medical-desc">{registro.detalles}</span>
                   )}
                 </li>
-              );
-            })}
-          </ul>
-        </div>
-      )}
-
-      {medico.vacunas?.length > 0 && (
-        <div className="card">
-          <h3 className="card-title">
-            <Syringe size={18} /> Vacunas
-          </h3>
-          <ul className="vaccine-list">
-            {medico.vacunas.map((v, i) => (
-              <li key={i} className="vaccine-item">
-                <div className="medical-info">
-                  <span className="vaccine-name">{v.nombre}</span>
-                  {v.fecha && <span className="vaccine-date">{v.fecha}</span>}
-                  {v.descripcion && <span className="medical-desc">{v.descripcion}</span>}
-                </div>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-
-      {medico.cirugias?.length > 0 && (
-        <div className="card">
-          <h3 className="card-title">Cirugías y procedimientos previos</h3>
-          <ul className="allergy-list">
-            {medico.cirugias.map((c, i) => (
-              <li key={i} className="allergy-item">
-                <strong>
-                  {c.nombre}
-                  {c.fecha ? ` (${c.fecha})` : ''}
-                </strong>
-                {c.descripcion && <span className="medical-desc">{c.descripcion}</span>}
-              </li>
-            ))}
+              ))}
           </ul>
         </div>
       )}

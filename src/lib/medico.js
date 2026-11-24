@@ -2,6 +2,62 @@ import { getTalla } from './pets';
 
 export const DIAS_AVISO = 30;
 
+export const CATEGORIAS_REGISTRO = [
+  'Vacuna',
+  'Alergia',
+  'Cirugía',
+  'Desparasitación',
+  'Consulta',
+  'Tratamiento',
+  'Otro',
+];
+
+export const ESTADOS_REGISTRO = ['Aplicada', 'Pendiente de aplicar'];
+
+export function normalizarRegistros(medico = {}) {
+  if (Array.isArray(medico.registros)) return medico.registros;
+
+  const legacy = [];
+  (medico.vacunas || []).forEach((v, i) => {
+    legacy.push({
+      id: `vacuna-${i}`,
+      nombre: v.nombre || '',
+      categoria: 'Vacuna',
+      estado: v.vigente === false ? 'Pendiente de aplicar' : 'Aplicada',
+      fecha: v.fecha || '',
+      detalles: v.descripcion || '',
+    });
+  });
+  (medico.alergias || []).forEach((raw, i) => {
+    const alergia = normalizarAlergia(raw);
+    legacy.push({
+      id: `alergia-${i}`,
+      nombre: alergia.nombre,
+      categoria: 'Alergia',
+      estado: 'Aplicada',
+      fecha: '',
+      detalles: alergia.descripcion,
+    });
+  });
+  (medico.cirugias || []).forEach((c, i) => {
+    legacy.push({
+      id: `cirugia-${i}`,
+      nombre: c.nombre || '',
+      categoria: 'Cirugía',
+      estado: 'Aplicada',
+      fecha: c.fecha || '',
+      detalles: c.descripcion || '',
+    });
+  });
+  return legacy;
+}
+
+export function registrosPendientes(medico = {}) {
+  return normalizarRegistros(medico).filter(
+    (r) => r.estado === 'Pendiente de aplicar'
+  );
+}
+
 export function normalizarAlergia(alergia) {
   if (typeof alergia === 'string') return { nombre: alergia, descripcion: '' };
   if (alergia && typeof alergia === 'object') {
