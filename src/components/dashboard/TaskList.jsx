@@ -10,7 +10,7 @@ import { vibrate, vibrateSuccess } from '../../lib/haptics';
 import '../../styles/global.css';
 
 export default function TaskList() {
-  const { tareas, toggleTarea, activePet, familia } = usePet();
+  const { tareas, toggleTarea, activePet, familia, hoyLocal } = usePet();
   const { profile } = useUser();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [nuevaTarea, setNuevaTarea] = useState('');
@@ -19,7 +19,8 @@ export default function TaskList() {
   const [eliminandoId, setEliminandoId] = useState('');
 
   const tareasList = tareas || [];
-  const completedCount = tareasList.filter((t) => t.completada).length;
+  const estaCompletada = (tarea) => tarea.lastCompletedDate === hoyLocal;
+  const completedCount = tareasList.filter(estaCompletada).length;
   const progressPercent = tareasList.length > 0 ? (completedCount / tareasList.length) * 100 : 0;
 
   const responsables = [
@@ -43,6 +44,7 @@ export default function TaskList() {
       id: Date.now().toString(),
       tarea: nuevaTarea.trim(),
       completada: false,
+      lastCompletedDate: null,
       asignadoA: asignadoA || '',
     };
 
@@ -91,6 +93,8 @@ export default function TaskList() {
         <div className="task-progress-fill" style={{ width: `${progressPercent}%` }} />
       </div>
 
+      <p className="field-hint">Las rutinas se reinician automáticamente cada día.</p>
+
       {tareasList.length === 0 ? (
         <div className="empty-state">
           <p>No hay tareas programadas para hoy.</p>
@@ -103,18 +107,21 @@ export default function TaskList() {
           {tareasList.map((task) => {
             const Icono = iconoTarea(task.tarea);
             return (
-              <li key={task.id} className={`task-card ${task.completada ? 'task-done' : ''}`}>
+              <li key={task.id} className={`task-card ${estaCompletada(task) ? 'task-done' : ''}`}>
                 <label className="task-label">
                   <input
                     type="checkbox"
                     className="task-checkbox"
-                    checked={!!task.completada}
+                    checked={estaCompletada(task)}
                     onChange={() => handleToggle(task.id)}
                   />
                   <span className="task-icon">
                     <Icono size={17} />
                   </span>
                   <span className="task-name">{task.tarea}</span>
+                  <span className="task-state">
+                    {estaCompletada(task) ? 'Hecho hoy' : 'Por hacer'}
+                  </span>
                 </label>
                 {task.asignadoA && (
                   <span className="task-assignee">

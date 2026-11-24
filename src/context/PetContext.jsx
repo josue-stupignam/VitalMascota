@@ -6,6 +6,7 @@ import { clinicasCercanas, familia } from '../data/mockData';
 import CryptoJS from 'crypto-js';
 import { CRYPTO_SECRET } from '../lib/cryptoSecret';
 import { TALLAS } from '../lib/pets';
+import { getTodayLocalDate } from '../lib/fechas';
 
 const encryptData = (data) => {
   return CryptoJS.AES.encrypt(JSON.stringify(data), CRYPTO_SECRET).toString();
@@ -48,6 +49,7 @@ export function PetProvider({ children }) {
   });
   const [petsLoading, setPetsLoading] = useState(() => getInitialCache().length === 0);
   const [showWizard, setShowWizard] = useState(false);
+  const [hoyLocal, setHoyLocal] = useState(getTodayLocalDate);
 
   // ── Firestore: Sincronización en tiempo real con caché en memoria ─────────
   useEffect(() => {
@@ -146,14 +148,36 @@ export function PetProvider({ children }) {
     }
   }, []);
 
+  useEffect(() => {
+    const refrescarFecha = () => setHoyLocal(getTodayLocalDate());
+    const alCambiarVisibilidad = () => {
+      if (!document.hidden) refrescarFecha();
+    };
+    const intervalo = setInterval(refrescarFecha, 60000);
+    document.addEventListener('visibilitychange', alCambiarVisibilidad);
+    window.addEventListener('focus', alCambiarVisibilidad);
+    return () => {
+      clearInterval(intervalo);
+      document.removeEventListener('visibilitychange', alCambiarVisibilidad);
+      window.removeEventListener('focus', alCambiarVisibilidad);
+    };
+  }, []);
+
   const toggleTarea = useCallback(async (tareaId) => {
     if (!activePetId) return;
     const activePetData = pets.find(p => p.id === activePetId);
     if (!activePetData) return;
 
-    const nuevasTareas = activePetData.tareas.map(t => 
-      t.id === tareaId ? { ...t, completada: !t.completada } : t
-    );
+    const hoy = getTodayLocalDate();
+    const nuevasTareas = (activePetData.tareas || []).map(t => {
+      if (t.id !== tareaId) return t;
+      const completadaHoy = t.lastCompletedDate === hoy;
+      return {
+        ...t,
+        lastCompletedDate: completadaHoy ? null : hoy,
+        completada: !completadaHoy,
+      };
+    });
 
     try {
       await updateDoc(doc(db, 'pets', activePetId), { tareas: nuevasTareas });
@@ -161,6 +185,27 @@ export function PetProvider({ children }) {
       console.error("Error al actualizar tarea:", error);
     }
   }, [activePetId, pets]);
+
+  // Al cambiar el día, las rutinas vuelven a "por hacer" también en Firestore.
+  useEffect(() => {
+    if (!activePetId) return;
+    const activePetData = pets.find(p => p.id === activePetId);
+    if (!activePetData) return;
+    const lista = activePetData.tareas || [];
+    const requiereReinicio = lista.some(
+      (t) => t.completada && t.lastCompletedDate !== hoyLocal
+    );
+    if (!requiereReinicio) return;
+
+    const reiniciadas = lista.map((t) => ({
+      ...t,
+      completada: t.lastCompletedDate === hoyLocal,
+    }));
+
+    updateDoc(doc(db, 'pets', activePetId), { tareas: reiniciadas }).catch((error) => {
+      console.error('Error al reiniciar rutinas diarias:', error);
+    });
+  }, [activePetId, hoyLocal, pets]);
 
   const updateActivePetMedico = useCallback(async (updater) => {
     if (!activePetId) return;
@@ -273,6 +318,7 @@ export function PetProvider({ children }) {
     familia,
     TALLAS,
     updatePet,
+    hoyLocal,
   };
 
   return <PetContext.Provider value={value}>{children}</PetContext.Provider>;

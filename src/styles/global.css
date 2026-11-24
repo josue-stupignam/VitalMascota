@@ -1610,3 +1610,16 @@ body {
   font-size: 0.85rem;
   color: var(--color-text-secondary);
 }
+
+.task-state {
+  margin-left: auto;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--color-text-secondary);
+}
+
+.task-done .task-state {
+  color: var(--color-success);
+}
