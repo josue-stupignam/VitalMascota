@@ -60,3 +60,12 @@ export function estadoInventario(dias) {
 export function formatearRangoTalla(tallaKey) {
   return getTalla(tallaKey).rango;
 }
+
+export function tallaDesdePeso(peso) {
+  const n = Number(peso);
+  if (!Number.isFinite(n) || n <= 0) return null;
+  if (n <= 10) return 'pequena';
+  if (n <= 25) return 'mediana';
+  if (n <= 45) return 'grande';
+  return 'gigante';
+}

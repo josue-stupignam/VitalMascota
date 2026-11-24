@@ -1,12 +1,14 @@
-import React from 'react';
-import { Megaphone, UserRoundCheck } from 'lucide-react';
+import React, { useState } from 'react';
+import { Megaphone, Pencil, UserRoundCheck } from 'lucide-react';
 import { usePet } from '../../context/PetContext';
 import { getEspecieIcono } from '../../lib/especies';
 import { getTalla } from '../../lib/pets';
+import PetEditModal from './PetEditModal';
 import '../../styles/global.css';
 
 export default function PetStatusCard({ onOpenPoster, onOpenSitter }) {
   const { activePet } = usePet();
+  const [isEditOpen, setIsEditOpen] = useState(false);
 
   if (!activePet) return null;
 
@@ -48,7 +50,12 @@ export default function PetStatusCard({ onOpenPoster, onOpenSitter }) {
         <button type="button" onClick={onOpenSitter} className="pet-quick-btn">
           <UserRoundCheck size={16} /> Modo Cuidador
         </button>
+        <button type="button" onClick={() => setIsEditOpen(true)} className="pet-quick-btn">
+          <Pencil size={16} /> Editar
+        </button>
       </div>
+
+      <PetEditModal isOpen={isEditOpen} onClose={() => setIsEditOpen(false)} />
     </div>
   );
 }

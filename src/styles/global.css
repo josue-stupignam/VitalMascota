@@ -302,7 +302,7 @@ body {
 
 .pet-quick-actions {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
   gap: 8px;
   margin-top: 14px;
   padding-top: 12px;
@@ -1579,4 +1579,34 @@ body {
 .timeline-body .status-pill.light-proximo {
   background: var(--color-warning-bg);
   color: var(--color-warning);
+}
+
+/* Talla calculada automáticamente */
+
+.talla-auto {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 14px 16px;
+  border: 1px solid var(--color-primary);
+  border-radius: 12px;
+  background: var(--color-primary-soft);
+}
+
+.talla-auto-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-primary);
+}
+
+.talla-auto-value {
+  font-size: 1.15rem;
+  color: var(--color-text);
+}
+
+.talla-auto-meta {
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
 }

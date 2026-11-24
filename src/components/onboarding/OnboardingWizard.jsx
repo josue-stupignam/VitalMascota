@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 import { usePet } from '../../context/PetContext';
 import { sugerenciasPorEspecie } from '../../data/mockData';
-import { TALLAS, TALLAS_KEYS, getTalla } from '../../lib/pets';
+import { TALLAS, tallaDesdePeso } from '../../lib/pets';
 import { getEspecieIcono } from '../../lib/especies';
 import { iconoTarea } from '../../lib/tareaIconos';
 import '../../styles/onboarding.css';
@@ -35,13 +35,13 @@ export default function OnboardingWizard({ onClose }) {
   const [raza, setRaza] = useState('');
   const [edad, setEdad] = useState('');
   const [peso, setPeso] = useState('');
-  const [talla, setTalla] = useState('');
   const [sexo, setSexo] = useState('macho');
   const [foto, setFoto] = useState('');
   const [selectedTareas, setSelectedTareas] = useState([]);
   const [errorMsg, setErrorMsg] = useState('');
 
   const EspecieIcono = getEspecieIcono(especie);
+  const talla = tallaDesdePeso(peso);
 
   useEffect(() => {
     const alPresionar = (e) => {
@@ -222,7 +222,7 @@ export default function OnboardingWizard({ onClose }) {
 
               <div className="input-group">
                 <label className="input-label" htmlFor="pet-peso">
-                  Peso (kg)
+                  Peso (kg) *
                 </label>
                 <input
                   id="pet-peso"
@@ -230,6 +230,7 @@ export default function OnboardingWizard({ onClose }) {
                   step="0.1"
                   min="0"
                   className="input-field"
+                  required
                   value={peso}
                   onChange={(e) => setPeso(e.target.value)}
                 />
@@ -237,33 +238,22 @@ export default function OnboardingWizard({ onClose }) {
             </div>
 
             <div className="input-group">
-              <span className="input-label">
-                Talla de tu mascota *
-              </span>
+              <span className="input-label">Talla de tu mascota</span>
               <p className="step-hint talla-hint">
-                Se usa para calcular su ración diaria de alimento
+                Se calcula automáticamente a partir del peso y define su ración diaria
               </p>
-              <div className="talla-grid">
-                {TALLAS_KEYS.map((key) => {
-                  const t = TALLAS[key];
-                  const selected = talla === key;
-                  return (
-                    <button
-                      type="button"
-                      key={key}
-                      className={`talla-card ${selected ? 'selected' : ''}`}
-                      onClick={() => setTalla(key)}
-                      aria-pressed={selected}
-                    >
-                      <span className="talla-nombre">{t.label}</span>
-                      <span className="talla-rango">{t.rango}</span>
-                      <span className="talla-racion">{t.porcionDiaria} g al día</span>
-                    </button>
-                  );
-                })}
-              </div>
-              {!talla && (
-                <p className="talla-error">Elige una talla para continuar</p>
+              {talla ? (
+                <div className="talla-auto">
+                  <span className="talla-auto-label">Talla asignada</span>
+                  <strong className="talla-auto-value">{TALLAS[talla].label}</strong>
+                  <span className="talla-auto-meta">
+                    {TALLAS[talla].rango} · {TALLAS[talla].porcionDiaria} g al día
+                  </span>
+                </div>
+              ) : (
+                <p className="talla-error">
+                  Escribe el peso de tu mascota para calcular su talla
+                </p>
               )}
             </div>
 
