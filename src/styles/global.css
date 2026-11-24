@@ -1497,3 +1497,86 @@ body {
   min-height: 72px;
   max-height: 72px;
 }
+
+/* ─── Actividad reciente ampliada ───────────────────────────────────────── */
+.weight-embed {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.activity-section {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--color-border);
+}
+
+.activity-subtitle {
+  margin: 0 0 10px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.activity-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.activity-bar-row {
+  display: grid;
+  grid-template-columns: 110px 1fr 24px;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.8rem;
+}
+
+.activity-bar-label {
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.activity-bar-track {
+  height: 10px;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.activity-bar-fill {
+  height: 100%;
+  background: var(--color-primary);
+  border-radius: 6px;
+}
+
+.activity-bar-total {
+  text-align: right;
+  font-weight: 700;
+}
+
+.timeline-body .status-pill {
+  display: inline-flex;
+  align-items: center;
+  margin-top: 4px;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  width: fit-content;
+}
+
+.timeline-body .status-pill.light-ok {
+  background: var(--color-success-bg);
+  color: var(--color-success);
+}
+
+.timeline-body .status-pill.light-proximo {
+  background: var(--color-warning-bg);
+  color: var(--color-warning);
+}

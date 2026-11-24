@@ -9,10 +9,12 @@ function etiqueta(item) {
   return item.mes || '';
 }
 
-export default function WeightChart({ historial = [], tallaKey = 'mediana' }) {
+export default function WeightChart({ historial = [], tallaKey = 'mediana', embedded = false }) {
+  const claseContenedor = embedded ? 'weight-embed' : 'card';
+
   if (!historial || historial.length === 0) {
     return (
-      <div className="card">
+      <div className={claseContenedor}>
         <h3 className="card-title">
           <Scale size={18} /> Historial de peso
         </h3>
@@ -50,7 +52,7 @@ export default function WeightChart({ historial = [], tallaKey = 'mediana' }) {
   const bandaBajo = Math.min(84, y(min));
 
   return (
-    <div className="card">
+    <div className={claseContenedor}>
       <div className="card-title-row">
         <h3 className="card-title">
           <Scale size={18} /> Historial de peso
