@@ -51,6 +51,7 @@ export default function EventFeed({ eventos = [] }) {
       detalle: registro.categoria,
       estado: registro.estado,
       categoria: registro.categoria,
+      esRegistro: true,
     }));
 
     const deEventos = (eventos || []).map((evento, index) => ({
@@ -59,7 +60,8 @@ export default function EventFeed({ eventos = [] }) {
       mensaje: evento.mensaje,
       detalle: evento.tiempo || 'Reciente',
       estado: '',
-      categoria: evento.tipo || '',
+      tipo: evento.tipo || '',
+      esRegistro: false,
     }));
 
     return [...deRegistros, ...deEventos].sort((a, b) => {
@@ -92,7 +94,7 @@ export default function EventFeed({ eventos = [] }) {
       ) : (
         <div className="timeline">
           {feed.map((item) => {
-            const Icono = item.categoria
+            const Icono = item.esRegistro
               ? ICONO_CATEGORIA[item.categoria] || Activity
               : iconoEvento(item);
             return (
